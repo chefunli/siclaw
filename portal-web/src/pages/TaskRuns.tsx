@@ -1,6 +1,7 @@
 import { useEffect, useState } from "react"
 import { useParams, useNavigate, Link } from "react-router-dom"
 import { ArrowLeft, Clock, Loader2, AlertCircle, CheckCircle2, ChevronRight, ClipboardList, Play } from "lucide-react"
+import { useTranslation } from "react-i18next"
 import { api } from "../api"
 import { useToast } from "../components/toast"
 import { nextFireFull } from "../lib/taskSchedule"
@@ -77,6 +78,7 @@ function RunStatusBadge({ status }: { status: string }) {
  * URL: /agents/:agentId/tasks/:taskId
  */
 export function TaskRuns() {
+  const { t } = useTranslation()
   const { agentId, taskId } = useParams<{ agentId: string; taskId: string }>()
   const navigate = useNavigate()
   const toast = useToast()
@@ -195,7 +197,7 @@ export function TaskRuns() {
       )
       setRuns(Array.isArray(res.data) ? res.data : [])
       setHasMore(Boolean(res.hasMore))
-      toast.success("Run triggered")
+      toast.success(t("tasks.runTriggered"))
     } catch (err: any) {
       const msg: string = err?.message || "Failed to trigger run"
       // Server sends retry_after_sec on 429 (cooldown). Attach it to the

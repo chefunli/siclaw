@@ -1,6 +1,7 @@
 import { useState, useEffect } from "react"
 import { useParams, useSearchParams, useNavigate } from "react-router-dom"
 import { ArrowLeft, Loader2 } from "lucide-react"
+import { useTranslation } from "react-i18next"
 import { api } from "../api"
 import { useToast } from "../components/toast"
 import { AgentSettings } from "../components/AgentSettings"
@@ -18,6 +19,7 @@ const statusColors: Record<string, string> = {
 }
 
 export function AgentDetail() {
+  const { t } = useTranslation()
   const { id } = useParams()
   const [searchParams] = useSearchParams()
   const navigate = useNavigate()
@@ -46,13 +48,13 @@ export function AgentDetail() {
     )
   }
 
-  if (!agent) {
+    if (!agent) {
     return (
       <div className="flex flex-col items-center justify-center h-full">
-        <p className="text-[13px] text-muted-foreground">Agent not found</p>
+        <p className="text-[13px] text-muted-foreground">{t("common.agentNotFound")}</p>
         <button onClick={() => navigate("/agents")} className="mt-4 h-8 px-3 text-sm rounded-md border border-border text-muted-foreground hover:text-foreground">
           <ArrowLeft className="inline h-3.5 w-3.5 mr-1.5" />
-          Back to Agents
+          {t("common.backToAgents")}
         </button>
       </div>
     )
@@ -63,9 +65,9 @@ export function AgentDetail() {
       {/* Header bar */}
       <div className="flex items-center border-b border-border px-6 py-3">
         <div className="flex items-center gap-3">
-          <button
+                    <button
             onClick={() => navigate("/agents")}
-            title="Back"
+            title={t("common.back")}
             className="h-7 w-7 flex items-center justify-center rounded-md hover:bg-secondary text-muted-foreground hover:text-foreground"
           >
             <ArrowLeft className="h-4 w-4" />
@@ -76,12 +78,12 @@ export function AgentDetail() {
               <span className={`px-1.5 py-0.5 rounded text-[10px] ${
                 agent.is_production ? "bg-red-500/20 text-red-400" : "bg-blue-500/20 text-blue-400"
               }`}>
-                {agent.is_production ? "PROD" : "DEV"}
+                {agent.is_production ? t("agents.production") : t("agents.dev")}
               </span>
               <span className={`h-2 w-2 rounded-full ${statusColors[agent.status] || statusColors.inactive}`} />
             </div>
             <p className="text-[11px] text-muted-foreground mt-0.5">
-              {agent.model_id || "No model"}
+              {agent.model_id || t("common.noModel")}
               {agent.model_provider ? ` · ${agent.model_provider}` : ""}
             </p>
           </div>

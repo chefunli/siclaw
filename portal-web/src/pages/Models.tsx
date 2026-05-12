@@ -1,4 +1,5 @@
 import { useState, useEffect } from "react"
+import { useTranslation } from "react-i18next"
 import { Plus, Trash2, Loader2, ChevronDown, ChevronRight, Settings } from "lucide-react"
 import { api } from "../api"
 import { useToast } from "../components/toast"
@@ -25,6 +26,7 @@ export interface Provider {
 }
 
 export function Models() {
+  const { t } = useTranslation()
   const [providers, setProviders] = useState<Provider[]>([])
   const [loading, setLoading] = useState(true)
   const [expandedId, setExpandedId] = useState<string | null>(null)
@@ -64,14 +66,14 @@ export function Models() {
 
   useEffect(() => { fetchProviders() }, [])
 
-  const handleCreateProvider = async () => {
+    const handleCreateProvider = async () => {
     setCreating(true)
     try {
       await api("/siclaw/admin/models/providers", { method: "POST", body: providerForm })
       setShowCreateProvider(false)
       setProviderForm({ name: "", base_url: "", api_key: "", api_type: "openai-completions" })
       await fetchProviders()
-      toast.success("Provider created")
+      toast.success(t("common.success"))
     } catch (err: any) { toast.error(err.message) } finally { setCreating(false) }
   }
 
@@ -93,12 +95,12 @@ export function Models() {
       await api(`/siclaw/admin/models/providers/${editingId}`, { method: "PUT", body: editForm })
       setEditingId(null)
       await fetchProviders()
-      toast.success("Provider updated")
+      toast.success(t("common.success"))
     } catch (err: any) { toast.error(err.message) } finally { setSaving(false) }
   }
 
   const handleDeleteProvider = async (id: string) => {
-    if (!(await confirmDialog({ title: "Delete Provider", message: "Delete this provider and all its models? This cannot be undone.", destructive: true, confirmLabel: "Delete" }))) return
+    if (!(await confirmDialog({ title: t("common.delete"), message: t("common.deleteConfirm"), destructive: true, confirmLabel: t("common.delete") }))) return
     try {
       await api(`/siclaw/admin/models/providers/${id}`, { method: "DELETE" })
       setProviders((prev) => prev.filter((p) => p.id !== id))
@@ -116,7 +118,7 @@ export function Models() {
       setShowAddModel(null)
       setModelForm({ model_id: "", name: "", context_window: "128000", max_tokens: "65536", reasoning: false, is_default: false })
       await fetchProviders()
-      toast.success("Model added")
+      toast.success(t("common.success"))
     } catch (err: any) { toast.error(err.message) } finally { setAddingModel(false) }
   }
 
@@ -137,7 +139,7 @@ export function Models() {
     })
   }
 
-  const handleSaveModel = async (providerId: string) => {
+    const handleSaveModel = async (providerId: string) => {
     if (!editingModelId) return
     setSavingModel(true)
     try {
@@ -154,31 +156,31 @@ export function Models() {
       })
       setEditingModelId(null)
       await fetchProviders()
-      toast.success("Model updated")
+      toast.success(t("common.success"))
     } catch (err: any) { toast.error(err.message) } finally { setSavingModel(false) }
   }
 
   if (loading) return <div className="flex items-center justify-center h-full"><Loader2 className="h-6 w-6 animate-spin text-muted-foreground" /></div>
 
-  return (
+    return (
     <div className="flex flex-col h-full">
       <div className="flex items-center justify-between px-6 py-4 border-b border-border">
         <div>
-          <h1 className="text-lg font-semibold">Model Providers</h1>
-          <p className="text-sm text-muted-foreground">Configure LLM providers and models for your agents</p>
+          <h1 className="text-lg font-semibold">{t("models.title")}</h1>
+          <p className="text-sm text-muted-foreground">{t("models.subtitle")}</p>
         </div>
         <button onClick={() => setShowCreateProvider(true)} className="flex items-center gap-1.5 h-8 px-3 text-sm rounded-md bg-primary text-primary-foreground hover:opacity-90">
-          <Plus className="h-3.5 w-3.5" /> Add Provider
+          <Plus className="h-3.5 w-3.5" /> {t("models.newProvider")}
         </button>
       </div>
 
       {/* Create provider form */}
       {showCreateProvider && (
         <div className="mx-6 my-4 p-4 rounded-lg border border-border bg-card space-y-4">
-          <p className="text-sm font-medium">New Provider</p>
+          <p className="text-sm font-medium">{t("models.newProvider")}</p>
           <div className="grid grid-cols-2 gap-3">
             <div>
-              <label className="block text-sm font-medium mb-1">Provider Name</label>
+              <label className="block text-sm font-medium mb-1">{t("models.providerName")}</label>
               <input placeholder="e.g. openai" value={providerForm.name} onChange={(e) => setProviderForm({ ...providerForm, name: e.target.value })} className="w-full h-8 px-3 text-sm rounded-md border border-border bg-background" />
             </div>
             <div>
@@ -190,17 +192,17 @@ export function Models() {
             </div>
           </div>
           <div>
-            <label className="block text-sm font-medium mb-1">Base URL</label>
+            <label className="block text-sm font-medium mb-1">{t("models.baseUrl")}</label>
             <input placeholder="e.g. https://api.openai.com/v1" value={providerForm.base_url} onChange={(e) => setProviderForm({ ...providerForm, base_url: e.target.value })} className="w-full h-8 px-3 text-sm rounded-md border border-border bg-background font-mono" />
             <p className="text-xs text-muted-foreground mt-1">The API endpoint URL. Must support OpenAI-compatible or Anthropic chat completions.</p>
           </div>
           <div>
-            <label className="block text-sm font-medium mb-1">API Key</label>
+            <label className="block text-sm font-medium mb-1">{t("models.apiKey")}</label>
             <input type="password" placeholder="Bearer token for authentication" value={providerForm.api_key} onChange={(e) => setProviderForm({ ...providerForm, api_key: e.target.value })} className="w-full h-8 px-3 text-sm rounded-md border border-border bg-background" />
           </div>
           <div className="flex gap-2">
-            <button onClick={handleCreateProvider} disabled={creating || !providerForm.name || !providerForm.base_url} className="h-8 px-4 text-sm rounded-md bg-primary text-primary-foreground disabled:opacity-50">{creating ? "..." : "Create"}</button>
-            <button onClick={() => setShowCreateProvider(false)} className="h-8 px-4 text-sm rounded-md border border-border text-muted-foreground">Cancel</button>
+            <button onClick={handleCreateProvider} disabled={creating || !providerForm.name || !providerForm.base_url} className="h-8 px-4 text-sm rounded-md bg-primary text-primary-foreground disabled:opacity-50">{creating ? t("common.loading") : t("common.create")}</button>
+            <button onClick={() => setShowCreateProvider(false)} className="h-8 px-4 text-sm rounded-md border border-border text-muted-foreground">{t("common.cancel")}</button>
           </div>
         </div>
       )}
@@ -210,14 +212,14 @@ export function Models() {
         {providers.length === 0 ? (
           <div className="flex flex-col items-center justify-center py-20">
             <Settings className="h-12 w-12 text-muted-foreground/30 mb-3" />
-            <p className="text-sm text-muted-foreground">No model providers configured</p>
-            <p className="text-xs text-muted-foreground/70 mt-1">Add a provider to enable AI conversations</p>
+            <p className="text-sm text-muted-foreground">{t("common.noData")}</p>
+            <p className="text-xs text-muted-foreground/70 mt-1">{t("models.addProviderHint") || "Add a provider to enable AI conversations"}</p>
           </div>
         ) : (
           <div className="px-6 py-4 space-y-3">
             {providers.map((provider) => (
               <div key={provider.id} className="rounded-lg border border-border/50">
-                {/* Provider header */}
+                                {/* Provider header */}
                 <div className="flex items-center justify-between p-3 cursor-pointer hover:bg-secondary/30" onClick={() => setExpandedId(expandedId === provider.id ? null : provider.id)}>
                   <div className="flex items-center gap-2">
                     {expandedId === provider.id ? <ChevronDown className="h-4 w-4 text-muted-foreground" /> : <ChevronRight className="h-4 w-4 text-muted-foreground" />}
@@ -227,31 +229,31 @@ export function Models() {
                     </div>
                   </div>
                   <div className="flex items-center gap-2">
-                    <span className="text-xs text-muted-foreground">{provider.models?.length || 0} models</span>
-                    <button onClick={(e) => { e.stopPropagation(); startEdit(provider) }} title="Edit provider" className="p-1.5 rounded-md hover:bg-secondary text-muted-foreground hover:text-foreground"><Settings className="h-3.5 w-3.5" /></button>
-                    <button onClick={(e) => { e.stopPropagation(); handleDeleteProvider(provider.id) }} title="Delete provider" className="p-1.5 rounded-md hover:bg-destructive/20 text-muted-foreground hover:text-red-400"><Trash2 className="h-3.5 w-3.5" /></button>
+                    <span className="text-xs text-muted-foreground">{provider.models?.length || 0} {t("models.models") || "models"}</span>
+                    <button onClick={(e) => { e.stopPropagation(); startEdit(provider) }} title={t("common.edit")} className="p-1.5 rounded-md hover:bg-secondary text-muted-foreground hover:text-foreground"><Settings className="h-3.5 w-3.5" /></button>
+                    <button onClick={(e) => { e.stopPropagation(); handleDeleteProvider(provider.id) }} title={t("common.delete")} className="p-1.5 rounded-md hover:bg-destructive/20 text-muted-foreground hover:text-red-400"><Trash2 className="h-3.5 w-3.5" /></button>
                   </div>
                 </div>
 
                 {/* Expanded content */}
                 {expandedId === provider.id && (
                   <div className="border-t border-border/50 p-3 bg-secondary/10">
-                    {/* Edit form */}
+                                        {/* Edit form */}
                     {editingId === provider.id && (
                       <div className="p-3 mb-3 rounded-md border border-border bg-card space-y-2">
-                        <p className="text-xs font-medium text-muted-foreground">Edit Provider</p>
+                        <p className="text-xs font-medium text-muted-foreground">{t("common.edit")}</p>
                         <div className="grid grid-cols-2 gap-2">
-                          <input placeholder="Name" value={editForm.name} onChange={(e) => setEditForm({ ...editForm, name: e.target.value })} className="h-7 px-2 text-xs rounded-md border border-border bg-background" />
+                          <input placeholder={t("common.name")} value={editForm.name} onChange={(e) => setEditForm({ ...editForm, name: e.target.value })} className="h-7 px-2 text-xs rounded-md border border-border bg-background" />
                           <select value={editForm.api_type} onChange={(e) => setEditForm({ ...editForm, api_type: e.target.value })} className="h-7 px-2 text-xs rounded-md border border-border bg-background">
                             <option value="openai-completions">OpenAI Compatible</option>
                             <option value="anthropic">Anthropic</option>
                           </select>
                         </div>
-                        <input placeholder="Base URL" value={editForm.base_url} onChange={(e) => setEditForm({ ...editForm, base_url: e.target.value })} className="w-full h-7 px-2 text-xs rounded-md border border-border bg-background font-mono" />
-                        <input type="password" placeholder="API Key (leave empty to keep current)" value={editForm.api_key} onChange={(e) => setEditForm({ ...editForm, api_key: e.target.value })} className="w-full h-7 px-2 text-xs rounded-md border border-border bg-background" />
+                        <input placeholder={t("models.baseUrl")} value={editForm.base_url} onChange={(e) => setEditForm({ ...editForm, base_url: e.target.value })} className="w-full h-7 px-2 text-xs rounded-md border border-border bg-background font-mono" />
+                        <input type="password" placeholder={t("models.apiKeyPlaceholder") || "API Key (leave empty to keep current)"} value={editForm.api_key} onChange={(e) => setEditForm({ ...editForm, api_key: e.target.value })} className="w-full h-7 px-2 text-xs rounded-md border border-border bg-background" />
                         <div className="flex gap-2">
-                          <button onClick={handleSaveEdit} disabled={saving || !editForm.name || !editForm.base_url} className="h-7 px-3 text-xs rounded-md bg-primary text-primary-foreground disabled:opacity-50">{saving ? "..." : "Save"}</button>
-                          <button onClick={() => setEditingId(null)} className="h-7 px-3 text-xs rounded-md border border-border text-muted-foreground">Cancel</button>
+                          <button onClick={handleSaveEdit} disabled={saving || !editForm.name || !editForm.base_url} className="h-7 px-3 text-xs rounded-md bg-primary text-primary-foreground disabled:opacity-50">{saving ? t("common.loading") : t("common.save")}</button>
+                          <button onClick={() => setEditingId(null)} className="h-7 px-3 text-xs rounded-md border border-border text-muted-foreground">{t("common.cancel")}</button>
                         </div>
                       </div>
                     )}

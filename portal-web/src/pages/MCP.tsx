@@ -1,4 +1,5 @@
 import { useState, useEffect, useMemo } from "react"
+import { useTranslation } from "react-i18next"
 import { Plus, Trash2, Loader2, Plug, Pencil, Power, Search, X } from "lucide-react"
 import { api } from "../api"
 import { useToast } from "../components/toast"
@@ -54,7 +55,7 @@ function recordToKv(rec?: Record<string, string> | null): KVPair[] {
   return [...Object.entries(rec).map(([key, value]) => ({ key, value })), { key: "", value: "" }]
 }
 
-function KVEditor({ label, pairs, onChange }: { label: string; pairs: KVPair[]; onChange: (p: KVPair[]) => void }) {
+function KVEditor({ label, pairs, onChange, t }: { label: string; pairs: KVPair[]; onChange: (p: KVPair[]) => void; t: (key: string) => string }) {
   const updatePair = (idx: number, field: "key" | "value", val: string) => {
     onChange(pairs.map((p, i) => (i === idx ? { ...p, [field]: val } : p)))
   }
@@ -68,14 +69,14 @@ function KVEditor({ label, pairs, onChange }: { label: string; pairs: KVPair[]; 
       <div className="flex items-center justify-between">
         <label className="text-xs font-medium text-muted-foreground">{label}</label>
         <button type="button" onClick={() => onChange([...pairs, { key: "", value: "" }])} className="flex items-center gap-1 px-1.5 py-0.5 text-[11px] text-muted-foreground hover:text-foreground rounded">
-          <Plus className="h-3 w-3" /> Add
+          <Plus className="h-3 w-3" /> {t("mcp.add")}
         </button>
       </div>
       <div className="space-y-1.5">
         {pairs.map((pair, idx) => (
           <div key={idx} className="flex items-center gap-1.5">
-            <input type="text" value={pair.key} onChange={(e) => updatePair(idx, "key", e.target.value)} placeholder="Key" className="flex-1 h-7 px-2 text-xs rounded-md border border-border bg-background font-mono" />
-            <input type="text" value={pair.value} onChange={(e) => updatePair(idx, "value", e.target.value)} placeholder="Value" className="flex-1 h-7 px-2 text-xs rounded-md border border-border bg-background font-mono" />
+            <input type="text" value={pair.key} onChange={(e) => updatePair(idx, "key", e.target.value)} placeholder={t("mcp.key")} className="flex-1 h-7 px-2 text-xs rounded-md border border-border bg-background font-mono" />
+            <input type="text" value={pair.value} onChange={(e) => updatePair(idx, "value", e.target.value)} placeholder={t("mcp.value")} className="flex-1 h-7 px-2 text-xs rounded-md border border-border bg-background font-mono" />
             {pairs.length > 1 && (
               <button type="button" onClick={() => removePair(idx)} className="p-1 text-muted-foreground hover:text-red-400">
                 <Trash2 className="h-3 w-3" />
@@ -90,10 +91,11 @@ function KVEditor({ label, pairs, onChange }: { label: string; pairs: KVPair[]; 
 
 // ── MCP Form (inline) ──────────────────────────────────────────────
 
-function McpForm({ server, onSave, onCancel }: {
+function McpForm({ server, onSave, onCancel, t }: {
   server?: McpServer | null
   onSave: (data: Record<string, unknown>) => Promise<void>
   onCancel: () => void
+  t: (key: string) => string
 }) {
   const isEditing = !!server
   const [transport, setTransport] = useState<McpTransport>(server?.transport || "streamable-http")
@@ -129,11 +131,11 @@ function McpForm({ server, onSave, onCancel }: {
 
   return (
     <div className="p-4 rounded-lg border border-border bg-card space-y-3">
-      <p className="text-sm font-medium">{isEditing ? "Edit MCP Server" : "New MCP Server"}</p>
+      <p className="text-sm font-medium">{isEditing ? t("mcp.editServer") : t("mcp.newMcpServer")}</p>
 
       {/* Transport selector */}
       <div className="space-y-1.5">
-        <label className="text-xs font-medium text-muted-foreground">Transport</label>
+        <label className="text-xs font-medium text-muted-foreground">{t("mcp.transport")}</label>
         <div className="flex gap-1.5">
           {TRANSPORT_OPTIONS.map((opt) => (
             <button
@@ -156,12 +158,12 @@ function McpForm({ server, onSave, onCancel }: {
       {/* Name + Description */}
       <div className="grid grid-cols-2 gap-3">
         <div className="space-y-1">
-          <label className="text-xs font-medium text-muted-foreground">Name *</label>
+          <label className="text-xs font-medium text-muted-foreground">{t("mcp.name")}</label>
           <input value={name} onChange={(e) => setName(e.target.value)} placeholder="e.g. prometheus, filesystem" className="w-full h-8 px-3 text-sm rounded-md border border-border bg-background" />
         </div>
         <div className="space-y-1">
-          <label className="text-xs font-medium text-muted-foreground">Description</label>
-          <input value={description} onChange={(e) => setDescription(e.target.value)} placeholder="Optional description" className="w-full h-8 px-3 text-sm rounded-md border border-border bg-background" />
+          <label className="text-xs font-medium text-muted-foreground">{t("mcp.description")}</label>
+          <input value={description} onChange={(e) => setDescription(e.target.value)} placeholder={t("mcp.optionalDescription")} className="w-full h-8 px-3 text-sm rounded-md border border-border bg-background" />
         </div>
       </div>
 
@@ -170,32 +172,32 @@ function McpForm({ server, onSave, onCancel }: {
         <div className="space-y-3">
           <div className="grid grid-cols-2 gap-3">
             <div className="space-y-1">
-              <label className="text-xs font-medium text-muted-foreground">Command *</label>
-              <input value={command} onChange={(e) => setCommand(e.target.value)} placeholder="e.g. npx, node, python" className="w-full h-8 px-3 text-sm rounded-md border border-border bg-background font-mono" />
+              <label className="text-xs font-medium text-muted-foreground">{t("mcp.command")}</label>
+              <input value={command} onChange={(e) => setCommand(e.target.value)} placeholder={t("mcp.commandPlaceholder")} className="w-full h-8 px-3 text-sm rounded-md border border-border bg-background font-mono" />
             </div>
             <div className="space-y-1">
-              <label className="text-xs font-medium text-muted-foreground">Arguments</label>
-              <input value={argsStr} onChange={(e) => setArgsStr(e.target.value)} placeholder="e.g. -y @modelcontextprotocol/server" className="w-full h-8 px-3 text-sm rounded-md border border-border bg-background font-mono" />
+              <label className="text-xs font-medium text-muted-foreground">{t("mcp.arguments")}</label>
+              <input value={argsStr} onChange={(e) => setArgsStr(e.target.value)} placeholder={t("mcp.argsPlaceholder")} className="w-full h-8 px-3 text-sm rounded-md border border-border bg-background font-mono" />
             </div>
           </div>
-          <KVEditor label="Environment Variables" pairs={envPairs} onChange={setEnvPairs} />
+          <KVEditor label={t("mcp.envVars")} pairs={envPairs} onChange={setEnvPairs} t={t} />
         </div>
       ) : (
         <div className="space-y-3">
           <div className="space-y-1">
-            <label className="text-xs font-medium text-muted-foreground">URL *</label>
+            <label className="text-xs font-medium text-muted-foreground">{t("mcp.url")}</label>
             <input value={url} onChange={(e) => setUrl(e.target.value)} placeholder={transport === "sse" ? "http://localhost:8000/sse" : "http://localhost:8000/mcp"} className="w-full h-8 px-3 text-sm rounded-md border border-border bg-background font-mono" />
           </div>
-          <KVEditor label="Headers" pairs={headerPairs} onChange={setHeaderPairs} />
+          <KVEditor label={t("mcp.headers")} pairs={headerPairs} onChange={setHeaderPairs} t={t} />
         </div>
       )}
 
       {/* Actions */}
       <div className="flex gap-2">
         <button onClick={handleSave} disabled={saving || !canSave} className="h-8 px-4 text-sm rounded-md bg-primary text-primary-foreground disabled:opacity-50">
-          {saving ? "..." : isEditing ? "Save" : "Create"}
+          {saving ? t("common.loading") : isEditing ? t("common.save") : t("common.create")}
         </button>
-        <button onClick={onCancel} className="h-8 px-4 text-sm rounded-md border border-border text-muted-foreground">Cancel</button>
+        <button onClick={onCancel} className="h-8 px-4 text-sm rounded-md border border-border text-muted-foreground">{t("common.cancel")}</button>
       </div>
     </div>
   )
@@ -204,6 +206,7 @@ function McpForm({ server, onSave, onCancel }: {
 // ── MCP Page ───────────────────────────────────────────────────────
 
 export function MCP() {
+  const { t } = useTranslation()
   const [servers, setServers] = useState<McpServer[]>([])
   const [loading, setLoading] = useState(true)
   const [search, setSearch] = useState("")
@@ -250,12 +253,12 @@ export function MCP() {
     return list
   }, [servers, search, transportFilter])
 
-  const handleCreate = async (data: Record<string, unknown>) => {
+    const handleCreate = async (data: Record<string, unknown>) => {
     try {
       await api("/siclaw/mcp", { method: "POST", body: data })
       setShowCreate(false)
       await fetchServers()
-      toast.success("MCP server created")
+      toast.success(t("mcp.created"))
     } catch (err: any) {
       toast.error(err.message)
     }
@@ -267,7 +270,7 @@ export function MCP() {
       await api(`/siclaw/mcp/${editingServer.id}`, { method: "PUT", body: data })
       setEditingServer(null)
       await fetchServers()
-      toast.success("MCP server updated")
+      toast.success(t("mcp.updated"))
     } catch (err: any) {
       toast.error(err.message)
     }
@@ -286,8 +289,8 @@ export function MCP() {
       )
       toast.success(
         server.enabled
-          ? "Server disabled — open chats will stop using it on the next message"
-          : "Server enabled — open chats will pick it up on the next message",
+          ? `${t("mcp.serverDisabled")} — ${t("mcp.disableHint")}`
+          : `${t("mcp.serverEnabled")} — ${t("mcp.enableHint")}`,
       )
     } catch (err: any) {
       toast.error(err.message)
@@ -298,36 +301,36 @@ export function MCP() {
 
   const handleDelete = async (server: McpServer) => {
     if (!(await confirmDialog({
-      title: "Delete MCP Server",
-      message: `Delete "${server.name}"? This cannot be undone.`,
+      title: t("mcp.deleteTitle"),
+      message: t("mcp.deleteMessage", { name: server.name }),
       destructive: true,
-      confirmLabel: "Delete",
+      confirmLabel: t("common.delete"),
     }))) return
     try {
       await api(`/siclaw/mcp/${server.id}`, { method: "DELETE" })
       setServers((prev) => prev.filter((s) => s.id !== server.id))
       if (editingServer?.id === server.id) setEditingServer(null)
-      toast.success("MCP server deleted — open chats will stop using it on the next message")
+      toast.success(`${t("mcp.deleted")} — ${t("mcp.deleteHint")}`)
     } catch (err: any) {
       toast.error(err.message)
     }
   }
 
-  if (loading) return <div className="flex items-center justify-center h-full"><Loader2 className="h-6 w-6 animate-spin text-muted-foreground" /></div>
+    if (loading) return <div className="flex items-center justify-center h-full"><Loader2 className="h-6 w-6 animate-spin text-muted-foreground" /></div>
 
   return (
     <div className="flex flex-col h-full">
       {/* Header */}
       <div className="flex items-center justify-between px-6 py-4 border-b border-border">
         <div>
-          <h1 className="text-lg font-semibold">MCP Servers</h1>
+          <h1 className="text-lg font-semibold">{t("mcp.mcpServers")}</h1>
           <p className="text-sm text-muted-foreground">
-            Manage Model Context Protocol server connections · changes apply to the next message in any open chat
+            {t("mcp.subtitle")}
           </p>
         </div>
         {isAdmin && (
           <button onClick={() => { setShowCreate(true); setEditingServer(null) }} className="flex items-center gap-1.5 h-8 px-3 text-sm rounded-md bg-primary text-primary-foreground hover:opacity-90">
-            <Plus className="h-3.5 w-3.5" /> New Server
+            <Plus className="h-3.5 w-3.5" /> {t("mcp.newServer")}
           </button>
         )}
       </div>
@@ -335,7 +338,7 @@ export function MCP() {
       {/* Create form */}
       {showCreate && (
         <div className="mx-6 my-4">
-          <McpForm onSave={handleCreate} onCancel={() => setShowCreate(false)} />
+          <McpForm onSave={handleCreate} onCancel={() => setShowCreate(false)} t={t} />
         </div>
       )}
 
@@ -348,7 +351,7 @@ export function MCP() {
               type="text"
               value={search}
               onChange={(e) => setSearch(e.target.value)}
-              placeholder="Search servers..."
+              placeholder={t("mcp.searchServers")}
               className="w-full h-8 pl-8 pr-3 text-sm rounded-md border border-border bg-background"
             />
             {search && (
@@ -362,7 +365,7 @@ export function MCP() {
             onChange={(e) => setTransportFilter(e.target.value as McpTransport | "")}
             className="h-8 px-3 text-sm rounded-md border border-border bg-background text-foreground"
           >
-            <option value="">All Transports</option>
+            <option value="">{t("mcp.allTransports")}</option>
             {TRANSPORT_OPTIONS.map((opt) => (
               <option key={opt.value} value={opt.value}>{opt.label}</option>
             ))}
@@ -375,14 +378,14 @@ export function MCP() {
         {servers.length === 0 ? (
           <div className="flex flex-col items-center justify-center py-20">
             <Plug className="h-12 w-12 text-muted-foreground/30 mb-3" />
-            <p className="text-sm text-muted-foreground">No MCP servers configured</p>
-            <p className="text-xs text-muted-foreground/70 mt-1">Add a server to connect external tools to your agents</p>
+            <p className="text-sm text-muted-foreground">{t("mcp.noServers")}</p>
+            <p className="text-xs text-muted-foreground/70 mt-1">{t("mcp.addServerHint")}</p>
           </div>
         ) : filtered.length === 0 ? (
           <div className="flex flex-col items-center justify-center py-20">
             <Search className="h-10 w-10 text-muted-foreground/30 mb-3" />
-            <p className="text-sm text-muted-foreground">No matching servers</p>
-            <p className="text-xs text-muted-foreground/70 mt-1">Try adjusting your search or filter</p>
+            <p className="text-sm text-muted-foreground">{t("mcp.noMatchingServers")}</p>
+            <p className="text-xs text-muted-foreground/70 mt-1">{t("mcp.tryAdjustingHint")}</p>
           </div>
         ) : (
           <div className="px-6 py-4 space-y-2">
@@ -416,21 +419,21 @@ export function MCP() {
                               ? "text-green-500 hover:text-orange-400 hover:bg-secondary"
                               : "text-muted-foreground hover:text-green-500 hover:bg-secondary"
                           } disabled:opacity-50`}
-                          title={server.enabled ? "Disable" : "Enable"}
+                          title={server.enabled ? t("mcp.disable") : t("mcp.enable")}
                         >
                           {toggling === server.id ? <Loader2 className="h-3.5 w-3.5 animate-spin" /> : <Power className="h-3.5 w-3.5" />}
                         </button>
                         <button
                           onClick={() => { setEditingServer(server); setShowCreate(false) }}
                           className="p-1.5 rounded-md text-muted-foreground hover:text-foreground hover:bg-secondary transition-colors"
-                          title="Edit"
+                          title={t("common.edit")}
                         >
                           <Pencil className="h-3.5 w-3.5" />
                         </button>
                         <button
                           onClick={() => handleDelete(server)}
                           className="p-1.5 rounded-md text-muted-foreground hover:text-red-400 hover:bg-destructive/20 transition-colors"
-                          title="Delete"
+                          title={t("common.delete")}
                         >
                           <Trash2 className="h-3.5 w-3.5" />
                         </button>
@@ -446,6 +449,7 @@ export function MCP() {
                       server={server}
                       onSave={handleUpdate}
                       onCancel={() => setEditingServer(null)}
+                      t={t}
                     />
                   </div>
                 )}

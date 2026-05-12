@@ -1,6 +1,7 @@
 import { useEffect, useMemo, useState } from "react"
 import { useNavigate, Link } from "react-router-dom"
 import { Clock, ClipboardList, Loader2, ChevronRight, Bot, Play, Pause, ArrowRight } from "lucide-react"
+import { useTranslation } from "react-i18next"
 import { api } from "../api"
 import { useToast } from "../components/toast"
 import { nextFireHint } from "../lib/taskSchedule"
@@ -26,14 +27,14 @@ interface AgentGroup {
   latestActivityMs: number
 }
 
-function formatRelative(iso: string | null): string {
+function formatRelative(iso: string | null, t: (key: string, options?: any) => string): string {
   if (!iso) return "\u2014"
   const now = Date.now()
-  const t = new Date(iso).getTime()
-  const diff = now - t
-  if (diff < 60_000) return "just now"
-  if (diff < 3_600_000) return `${Math.floor(diff / 60_000)}m ago`
-  if (diff < 86_400_000) return `${Math.floor(diff / 3_600_000)}h ago`
+  const time = new Date(iso).getTime()
+  const diff = now - time
+  if (diff < 60_000) return t("tasks.justNow")
+  if (diff < 3_600_000) return t("tasks.minutesAgo", { count: Math.floor(diff / 60_000) })
+  if (diff < 86_400_000) return t("tasks.hoursAgo", { count: Math.floor(diff / 3_600_000) })
   return new Date(iso).toLocaleString()
 }
 
@@ -71,6 +72,7 @@ function groupByAgent(tasks: MyTask[]): AgentGroup[] {
  * where the full task context is present.
  */
 export function MyTasks() {
+  const { t } = useTranslation()
   const [tasks, setTasks] = useState<MyTask[]>([])
   const [loading, setLoading] = useState(true)
   const [error, setError] = useState<string | null>(null)
@@ -100,25 +102,25 @@ export function MyTasks() {
     navigate(`/agents/${t.agent_id}/tasks/${t.id}`)
   }
 
-  const handleToggleStatus = async (e: React.MouseEvent, t: MyTask) => {
+  const handleToggleStatus = async (e: React.MouseEvent, task: MyTask) => {
     e.stopPropagation()
-    if (toggling.has(t.id)) return
-    const newStatus: "active" | "paused" = t.status === "active" ? "paused" : "active"
-    setToggling((prev) => new Set(prev).add(t.id))
-    setTasks((prev) => prev.map((x) => x.id === t.id ? { ...x, status: newStatus } : x))
+    if (toggling.has(task.id)) return
+    const newStatus: "active" | "paused" = task.status === "active" ? "paused" : "active"
+    setToggling((prev) => new Set(prev).add(task.id))
+    setTasks((prev) => prev.map((x) => x.id === task.id ? { ...x, status: newStatus } : x))
     try {
-      await api(`/siclaw/agents/${t.agent_id}/tasks/${t.id}`, {
+      await api(`/siclaw/agents/${task.agent_id}/tasks/${task.id}`, {
         method: "PUT",
         body: { status: newStatus },
       })
-      toast.success(`Task ${newStatus === "active" ? "activated" : "paused"}`)
+      toast.success(t(`tasks.task${newStatus === "active" ? "Activated" : "Paused"}`))
     } catch (err: any) {
-      setTasks((prev) => prev.map((x) => x.id === t.id ? { ...x, status: t.status } : x))
-      toast.error(err?.message || "Failed to update task")
+      setTasks((prev) => prev.map((x) => x.id === task.id ? { ...x, status: task.status } : x))
+      toast.error(err?.message || t("tasks.failedToUpdateTask"))
     } finally {
       setToggling((prev) => {
         const next = new Set(prev)
-        next.delete(t.id)
+        next.delete(task.id)
         return next
       })
     }
@@ -128,9 +130,9 @@ export function MyTasks() {
     <div className="h-full flex flex-col">
       <div className="flex items-center justify-between px-6 py-4 border-b border-border">
         <div>
-          <h1 className="text-[15px] font-semibold">My Schedules</h1>
+          <h1 className="text-[15px] font-semibold">{t("tasks.mySchedules")}</h1>
           <p className="text-[11px] text-muted-foreground mt-0.5">
-            Tasks grouped by their owning agent. Pause/resume inline; click a row for run history; use <span className="font-medium text-foreground/80">Manage</span> to create / edit / delete.
+            {t("tasks.mySchedulesDesc")}
           </p>
         </div>
       </div>
@@ -145,9 +147,9 @@ export function MyTasks() {
         ) : tasks.length === 0 ? (
           <div className="flex flex-col items-center justify-center py-20 text-muted-foreground">
             <ClipboardList className="h-12 w-12 text-muted-foreground/30 mb-3" />
-            <p className="text-[13px] font-medium">No scheduled tasks yet</p>
+            <p className="text-[13px] font-medium">{t("tasks.noScheduledTasksYet")}</p>
             <p className="text-[12px] text-muted-foreground/70 mt-1">
-              Open an agent's Tasks tab to create one.
+              {t("tasks.createTaskHint")}
             </p>
           </div>
         ) : (
@@ -164,43 +166,43 @@ export function MyTasks() {
                       {group.agentName}
                     </span>
                     <span className="text-[11px] text-muted-foreground tabular-nums shrink-0">
-                      · {group.tasks.length} {group.tasks.length === 1 ? "task" : "tasks"}
+                      · {group.tasks.length} {t(group.tasks.length === 1 ? "tasks.task" : "tasks.task_other")}
                     </span>
                   </div>
                   <Link
                     to={`/agents/${group.agentId}?tab=tasks`}
                     className="flex items-center gap-1 text-[11px] text-muted-foreground hover:text-foreground transition-colors shrink-0"
                   >
-                    Manage
+                    {t("tasks.manage")}
                     <ArrowRight className="h-3 w-3" />
                   </Link>
                 </div>
 
                 <div className="divide-y divide-border/30">
-                  {group.tasks.map((t) => {
-                    const isToggling = toggling.has(t.id)
+                  {group.tasks.map((task) => {
+                    const isToggling = toggling.has(task.id)
                     return (
                       <div
-                        key={t.id}
+                        key={task.id}
                         role="button"
                         tabIndex={0}
-                        onClick={() => openDetail(t)}
-                        onKeyDown={(e) => { if (e.key === "Enter" || e.key === " ") { e.preventDefault(); openDetail(t) } }}
+                        onClick={() => openDetail(task)}
+                        onKeyDown={(e) => { if (e.key === "Enter" || e.key === " ") { e.preventDefault(); openDetail(task) } }}
                         className="flex items-center px-5 py-3 hover:bg-muted/30 transition-colors text-left cursor-pointer"
                       >
                         <div className="w-[36%] px-2 min-w-0">
-                          <div className="text-[13px] font-medium text-foreground truncate">{t.name}</div>
-                          {t.description && (
-                            <div className="text-[11px] text-muted-foreground truncate mt-0.5">{t.description}</div>
+                          <div className="text-[13px] font-medium text-foreground truncate">{task.name}</div>
+                          {task.description && (
+                            <div className="text-[11px] text-muted-foreground truncate mt-0.5">{task.description}</div>
                           )}
                         </div>
                         <div className="w-[22%] px-2">
                           <div className="flex items-center gap-1.5 text-[12px] text-muted-foreground font-mono">
                             <Clock className="h-3.5 w-3.5 shrink-0" />
-                            {t.schedule}
+                            {task.schedule}
                           </div>
-                          {t.status === "active" && (() => {
-                            const hint = nextFireHint(t.schedule)
+                          {task.status === "active" && (() => {
+                            const hint = nextFireHint(task.schedule)
                             return hint ? (
                               <div className="text-[10px] text-muted-foreground/60 mt-0.5 pl-[22px] tabular-nums">
                                 next {hint}
@@ -212,22 +214,22 @@ export function MyTasks() {
                           <div className="flex items-center gap-1.5">
                             <span
                               className={`inline-block px-1.5 py-0.5 rounded text-[10px] font-medium ${
-                                t.status === "active"
+                                task.status === "active"
                                   ? "bg-green-500/20 text-green-400"
                                   : "bg-gray-500/20 text-gray-400"
                               }`}
                             >
-                              {t.status}
+                              {task.status}
                             </span>
                             <button
-                              onClick={(e) => handleToggleStatus(e, t)}
+                              onClick={(e) => handleToggleStatus(e, task)}
                               disabled={isToggling}
                               className="p-1 rounded-md text-muted-foreground/70 hover:text-foreground hover:bg-secondary disabled:opacity-40 disabled:cursor-not-allowed"
-                              title={t.status === "active" ? "Pause" : "Activate"}
+                              title={task.status === "active" ? t("tasks.pause") : t("tasks.activate")}
                             >
                               {isToggling ? (
                                 <Loader2 className="h-3 w-3 animate-spin" />
-                              ) : t.status === "active" ? (
+                              ) : task.status === "active" ? (
                                 <Pause className="h-3 w-3" />
                               ) : (
                                 <Play className="h-3 w-3" />
@@ -236,15 +238,15 @@ export function MyTasks() {
                           </div>
                         </div>
                         <div className="w-[18%] px-2">
-                          {t.last_run_at ? (
+                          {task.last_run_at ? (
                             <div className="flex items-center gap-1.5">
                               <span
                                 className={`h-1.5 w-1.5 rounded-full shrink-0 ${
-                                  t.last_result === "success" ? "bg-green-500" : "bg-red-500"
+                                  task.last_result === "success" ? "bg-green-500" : "bg-red-500"
                                 }`}
                               />
                               <span className="text-[12px] text-muted-foreground tabular-nums">
-                                {formatRelative(t.last_run_at)}
+                                {formatRelative(task.last_run_at, t)}
                               </span>
                             </div>
                           ) : (

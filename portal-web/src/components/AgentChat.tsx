@@ -1,4 +1,5 @@
 import { useState, useEffect, useCallback, useRef } from "react"
+import { useTranslation } from "react-i18next"
 import { Plus, Trash2, Loader2, MessageSquare, Search, Pencil, Check, X, History } from "lucide-react"
 import { api } from "../api"
 import { useToast } from "./toast"
@@ -29,6 +30,7 @@ function SessionSidebar({
   onDelete: (id: string) => void
   onRenamed: (id: string, title: string) => void
 }) {
+  const { t } = useTranslation()
   const toast = useToast()
   const [search, setSearch] = useState("")
   const [renamingId, setRenamingId] = useState<string | null>(null)
@@ -60,12 +62,12 @@ function SessionSidebar({
     <div className="flex-1 flex flex-col overflow-hidden">
       <div className="px-3 py-2 border-b border-border space-y-2">
         <button
-          onClick={onNew}
-          className="flex items-center gap-1.5 w-full h-8 px-3 text-[13px] rounded-md border border-border text-muted-foreground hover:text-foreground hover:bg-secondary/50"
-        >
-          <Plus className="h-3.5 w-3.5" />
-          New Session
-        </button>
+                  onClick={onNew}
+                  className="flex items-center gap-1.5 w-full h-8 px-3 text-[13px] rounded-md border border-border text-muted-foreground hover:text-foreground hover:bg-secondary/50"
+                >
+                  <Plus className="h-3.5 w-3.5" />
+                  {t('chat.newSession')}
+                </button>
         {sessions.length > 3 && (
           <div className="relative">
             <Search className="absolute left-2 top-1/2 -translate-y-1/2 h-3.5 w-3.5 text-muted-foreground/50" />
@@ -81,7 +83,7 @@ function SessionSidebar({
       <div className="flex-1 overflow-y-auto">
         {filtered.length === 0 ? (
           <p className="text-[12px] text-muted-foreground/60 text-center py-8">
-            {search ? "No matches" : "No sessions"}
+            {search ? t('chat.noMatches') : t('chat.noSessions')}
           </p>
         ) : (
           filtered.map(s => (
@@ -103,8 +105,8 @@ function SessionSidebar({
                     autoFocus
                     className="flex-1 h-6 px-1.5 text-[12px] rounded border border-border bg-background min-w-0"
                   />
-                  <button onClick={handleSaveRename} title="Save" className="p-0.5 rounded hover:bg-secondary text-green-400"><Check className="h-3 w-3" /></button>
-                  <button onClick={() => setRenamingId(null)} title="Cancel" className="p-0.5 rounded hover:bg-secondary text-muted-foreground"><X className="h-3 w-3" /></button>
+                  <button onClick={handleSaveRename} title={t('chat.save')} className="p-0.5 rounded hover:bg-secondary text-green-400"><Check className="h-3 w-3" /></button>
+                                    <button onClick={() => setRenamingId(null)} title={t('chat.cancel')} className="p-0.5 rounded hover:bg-secondary text-muted-foreground"><X className="h-3 w-3" /></button>
                 </div>
               ) : (
                 <>
@@ -115,8 +117,8 @@ function SessionSidebar({
                     </p>
                   </div>
                   <div className="opacity-0 group-hover:opacity-100 flex items-center gap-0.5 transition-opacity">
-                    <button onClick={e => { e.stopPropagation(); handleStartRename(s) }} title="Rename" className="p-1 rounded hover:bg-secondary text-muted-foreground"><Pencil className="h-3 w-3" /></button>
-                    <button onClick={e => { e.stopPropagation(); onDelete(s.id) }} title="Delete" className="p-1 rounded hover:bg-destructive/20 hover:text-red-400 text-muted-foreground"><Trash2 className="h-3 w-3" /></button>
+                    <button onClick={e => { e.stopPropagation(); handleStartRename(s) }} title={t('chat.rename')} className="p-1 rounded hover:bg-secondary text-muted-foreground"><Pencil className="h-3 w-3" /></button>
+                                        <button onClick={e => { e.stopPropagation(); onDelete(s.id) }} title={t('common.delete')} className="p-1 rounded hover:bg-destructive/20 hover:text-red-400 text-muted-foreground"><Trash2 className="h-3 w-3" /></button>
                   </div>
                 </>
               )}
@@ -135,6 +137,7 @@ interface AgentChatProps {
 }
 
 export function AgentChat({ agentId }: AgentChatProps) {
+  const { t } = useTranslation()
   const toast = useToast()
   const confirmDialog = useConfirm()
   const [showSessions, setShowSessions] = useState(false)
@@ -218,13 +221,13 @@ export function AgentChat({ agentId }: AgentChatProps) {
     }
   }, [agentId, toast])
 
-  const handleDeleteSession = useCallback(
+    const handleDeleteSession = useCallback(
     async (sid: string) => {
       const ok = await confirmDialog({
-        title: "Delete Session",
-        message: "Are you sure you want to delete this session? All messages will be lost.",
+        title: t("chat.deleteSessionTitle") || "Delete Session",
+        message: t("chat.deleteSessionMessage") || "Are you sure you want to delete this session? All messages will be lost.",
         destructive: true,
-        confirmLabel: "Delete",
+        confirmLabel: t("common.delete"),
       })
       if (!ok) return
       try {
@@ -233,16 +236,16 @@ export function AgentChat({ agentId }: AgentChatProps) {
         if (activeSessionId === sid) {
           setActiveSessionId(null)
         }
-        toast.success("Session deleted")
+        toast.success(t("common.success"))
       } catch (err: any) {
-        toast.error(err.message || "Failed to delete session")
+        toast.error(err.message || t("common.error"))
       }
     },
-    [agentId, activeSessionId, toast, confirmDialog],
+    [agentId, activeSessionId, toast, confirmDialog, t],
   )
 
   // Wrap send to also handle first-message session creation
-  const handleSend = useCallback(
+    const handleSend = useCallback(
     (text: string) => {
       if (!activeSessionId) {
         // Create a new session first, then send
@@ -254,13 +257,13 @@ export function AgentChat({ agentId }: AgentChatProps) {
             setTimeout(() => pilot.send(text), 50)
           })
           .catch((err: any) => {
-            toast.error(err.message || "Failed to create session")
+            toast.error(err.message || t("common.error"))
           })
         return
       }
       pilot.send(text)
     },
-    [activeSessionId, agentId, pilot, toast],
+    [activeSessionId, agentId, pilot, toast, t],
   )
 
   if (loading) {
@@ -279,7 +282,7 @@ export function AgentChat({ agentId }: AgentChatProps) {
           <div className="absolute inset-0 z-50 bg-background/60 backdrop-blur-sm" onClick={() => setShowSessions(false)} />
           <div className="absolute top-0 left-0 bottom-0 z-50 w-[280px] bg-card border-r border-border shadow-lg shadow-black/20 flex flex-col">
             <div className="flex items-center justify-between px-4 py-3 border-b border-border">
-              <span className="text-sm font-medium">Recent Sessions</span>
+              <span className="text-sm font-medium">{t('chat.recentSessions')}</span>
               <button onClick={() => setShowSessions(false)} className="p-1 rounded-md text-muted-foreground hover:text-foreground">
                 <X className="h-4 w-4" />
               </button>
@@ -302,7 +305,7 @@ export function AgentChat({ agentId }: AgentChatProps) {
         <button
           onClick={() => setShowSessions(!showSessions)}
           className="p-1.5 rounded-md text-muted-foreground hover:text-foreground hover:bg-secondary/50 transition-colors"
-          title="Session history"
+          title={t('chat.sessionHistory')}
         >
           <History className="h-4 w-4" />
         </button>
@@ -310,7 +313,7 @@ export function AgentChat({ agentId }: AgentChatProps) {
           <button
             onClick={handleNewSession}
             className="p-1.5 rounded-md text-muted-foreground hover:text-foreground hover:bg-secondary transition-colors"
-            title="New session"
+            title={t('chat.newSession')}
           >
             <Plus className="h-4 w-4" />
           </button>
@@ -355,7 +358,7 @@ export function AgentChat({ agentId }: AgentChatProps) {
         ) : (
           <div className="flex flex-col items-center justify-center flex-1">
             <MessageSquare className="h-12 w-12 text-muted-foreground/30 mb-3" />
-            <p className="text-[13px] text-muted-foreground">Select or create a session to begin</p>
+            <p className="text-[13px] text-muted-foreground">{t('chat.selectOrCreateSession')}</p>
           </div>
         )}
       </div>

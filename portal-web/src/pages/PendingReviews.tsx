@@ -1,6 +1,7 @@
 import { useState, useEffect } from "react"
 import { useNavigate } from "react-router-dom"
 import { ShieldCheck, Loader2 } from "lucide-react"
+import { useTranslation } from "react-i18next"
 import { api } from "../api"
 
 interface PendingReview {
@@ -32,6 +33,7 @@ function parseAssessment(raw: PendingReview["security_assessment"]): { risk_leve
 }
 
 export function PendingReviews() {
+  const { t } = useTranslation()
   const [reviews, setReviews] = useState<PendingReview[]>([])
   const [loading, setLoading] = useState(true)
   const navigate = useNavigate()

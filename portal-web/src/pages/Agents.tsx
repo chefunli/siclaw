@@ -5,6 +5,7 @@ import { api, clearAgentMemory } from "../api"
 import { useToast } from "../components/toast"
 import { Tooltip } from "../components/tooltip"
 import { useConfirm } from "../components/confirm-dialog"
+import { useTranslation } from "react-i18next"
 
 interface Agent {
   id: string; name: string; description: string; status: string
@@ -21,6 +22,7 @@ interface Provider {
 }
 
 export function Agents() {
+  const { t } = useTranslation()
   const [agents, setAgents] = useState<Agent[]>([])
   const [providers, setProviders] = useState<Provider[]>([])
   const [loading, setLoading] = useState(true)
@@ -52,23 +54,23 @@ export function Agents() {
     } catch (err: any) { toast.error(err.message) } finally { setCreating(false) }
   }
 
-  const handleDelete = async (id: string) => {
-    if (!(await confirmDialog({ title: "Delete Agent", message: "Are you sure you want to delete this agent? This cannot be undone.", destructive: true, confirmLabel: "Delete" }))) return
+    const handleDelete = async (id: string) => {
+    if (!(await confirmDialog({ title: t("agents.deleteConfirmTitle"), message: t("agents.deleteConfirmMessage"), destructive: true, confirmLabel: t("common.delete") }))) return
     await api(`/agents/${id}`, { method: "DELETE" })
     setAgents((prev) => prev.filter((a) => a.id !== id))
   }
 
   const handleClearMemory = async (id: string) => {
-    if (!(await confirmDialog({ title: "Clear Agent Memory", message: "Delete all investigation files and memory records for this agent. Session history is not affected.", destructive: true, confirmLabel: "Clear Memory" }))) return
+    if (!(await confirmDialog({ title: t("agents.clearMemoryTitle"), message: t("agents.clearMemoryMessage"), destructive: true, confirmLabel: t("agents.clearMemory") }))) return
     try {
       const result = await clearAgentMemory(id)
-      toast.success(`Memory cleared (${result.deletedFiles} files removed)`)
+      toast.success(t("agents.memoryCleared", { count: result.deletedFiles }))
     } catch (err: any) { toast.error(err.message) }
   }
 
-  // Resolve model display name
+    // Resolve model display name
   const getModelDisplay = (agent: Agent): string => {
-    if (!agent.model_id) return "No model"
+    if (!agent.model_id) return t("common.noModel")
     const p = providers.find((pr) => pr.name === agent.model_provider)
     const m = p?.models?.find((mo) => mo.model_id === agent.model_id)
     return m?.name || agent.model_id
@@ -80,47 +82,47 @@ export function Agents() {
     <div className="flex flex-col h-full">
       <div className="flex items-center justify-between px-6 py-4 border-b border-border">
         <div>
-          <h1 className="text-lg font-semibold">Agents</h1>
-          <p className="text-sm text-muted-foreground">Manage AI agents</p>
+          <h1 className="text-lg font-semibold">{t("agents.title")}</h1>
+          <p className="text-sm text-muted-foreground">{t("agents.subtitle")}</p>
         </div>
         <button onClick={() => setShowCreate(true)} className="flex items-center gap-1.5 h-8 px-3 text-sm rounded-md bg-primary text-primary-foreground hover:opacity-90">
-          <Plus className="h-3.5 w-3.5" /> New Agent
+          <Plus className="h-3.5 w-3.5" /> {t("agents.newAgent")}
         </button>
       </div>
 
       {showCreate && (
         <div className="mx-6 my-4 p-4 rounded-lg border border-border bg-card space-y-4">
           <div>
-            <label className="block text-sm font-medium mb-1">Agent Name</label>
-            <input placeholder="e.g. sre-copilot" value={form.name} onChange={(e) => setForm({ ...form, name: e.target.value })} className="w-full h-8 px-3 text-sm rounded-md border border-border bg-background" />
+            <label className="block text-sm font-medium mb-1">{t("agents.agentName")}</label>
+            <input placeholder={t("agents.agentNamePlaceholder")} value={form.name} onChange={(e) => setForm({ ...form, name: e.target.value })} className="w-full h-8 px-3 text-sm rounded-md border border-border bg-background" />
           </div>
           <div>
-            <label className="block text-sm font-medium mb-1">Description</label>
-            <input placeholder="Optional description" value={form.description} onChange={(e) => setForm({ ...form, description: e.target.value })} className="w-full h-8 px-3 text-sm rounded-md border border-border bg-background" />
+            <label className="block text-sm font-medium mb-1">{t("agents.description")}</label>
+            <input placeholder={t("agents.descriptionPlaceholder")} value={form.description} onChange={(e) => setForm({ ...form, description: e.target.value })} className="w-full h-8 px-3 text-sm rounded-md border border-border bg-background" />
           </div>
           <div className="grid grid-cols-2 gap-3">
             <div>
-              <label className="block text-sm font-medium mb-1">Provider</label>
+              <label className="block text-sm font-medium mb-1">{t("agents.provider")}</label>
               <select
                 value={form.model_provider}
                 onChange={(e) => setForm({ ...form, model_provider: e.target.value, model_id: "" })}
                 className="w-full h-8 px-3 text-sm rounded-md border border-border bg-background"
               >
-                <option value="">Select Provider</option>
+                <option value="">{t("agents.selectProvider")}</option>
                 {providers.map((p) => (
                   <option key={p.id} value={p.name}>{p.name}</option>
                 ))}
               </select>
             </div>
             <div>
-              <label className="block text-sm font-medium mb-1">Model</label>
+              <label className="block text-sm font-medium mb-1">{t("agents.model")}</label>
               <select
                 value={form.model_id}
                 onChange={(e) => setForm({ ...form, model_id: e.target.value })}
                 disabled={!form.model_provider}
                 className="w-full h-8 px-3 text-sm rounded-md border border-border bg-background disabled:opacity-50"
               >
-                <option value="">Select Model</option>
+                <option value="">{t("agents.selectModel")}</option>
                 {availableModels.map((m) => (
                   <option key={m.id} value={m.model_id}>{m.name || m.model_id}</option>
                 ))}
@@ -128,20 +130,20 @@ export function Agents() {
             </div>
           </div>
           {providers.length === 0 && (
-            <p className="text-xs text-muted-foreground">No providers configured. <button onClick={() => navigate("/settings/models")} className="underline hover:text-foreground">Add one first</button></p>
+            <p className="text-xs text-muted-foreground">{t("agents.noProviders")} <button onClick={() => navigate("/settings/models")} className="underline hover:text-foreground">{t("agents.addOne")}</button></p>
           )}
-          <div className="flex items-start gap-3">
+                    <div className="flex items-start gap-3">
             <button type="button" role="switch" aria-checked={form.is_production} onClick={() => setForm({ ...form, is_production: !form.is_production })} className={`relative inline-flex h-5 w-9 shrink-0 cursor-pointer rounded-full border-2 border-transparent transition-colors mt-0.5 ${form.is_production ? "bg-primary" : "bg-muted"}`}>
               <span className={`pointer-events-none inline-block h-4 w-4 transform rounded-full bg-white shadow-sm transition-transform ${form.is_production ? "translate-x-4" : "translate-x-0"}`} />
             </button>
             <div>
-              <label className="block text-sm font-medium">Production Agent</label>
-              <p className="text-xs text-muted-foreground">Production agents only receive approved skills and can only access production clusters/hosts. Dev agents see draft skills and dev resources.</p>
+              <label className="block text-sm font-medium">{t("agents.productionAgent")}</label>
+              <p className="text-xs text-muted-foreground">{t("agents.productionAgentDesc")}</p>
             </div>
           </div>
           <div className="flex gap-2">
-            <button onClick={handleCreate} disabled={creating || !form.name} className="h-8 px-4 text-sm rounded-md bg-primary text-primary-foreground disabled:opacity-50">{creating ? "..." : "Create"}</button>
-            <button onClick={() => setShowCreate(false)} className="h-8 px-4 text-sm rounded-md border border-border text-muted-foreground">Cancel</button>
+            <button onClick={handleCreate} disabled={creating || !form.name} className="h-8 px-4 text-sm rounded-md bg-primary text-primary-foreground disabled:opacity-50">{creating ? t("common.loading") : t("common.create")}</button>
+            <button onClick={() => setShowCreate(false)} className="h-8 px-4 text-sm rounded-md border border-border text-muted-foreground">{t("common.cancel")}</button>
           </div>
         </div>
       )}
@@ -150,7 +152,7 @@ export function Agents() {
         {agents.length === 0 ? (
           <div className="flex flex-col items-center justify-center py-20">
             <Bot className="h-12 w-12 text-muted-foreground/30 mb-3" />
-            <p className="text-sm text-muted-foreground">No agents yet</p>
+            <p className="text-sm text-muted-foreground">{t("agents.noAgents")}</p>
           </div>
         ) : (
           <div className="px-6 py-4 space-y-2">
@@ -173,34 +175,34 @@ export function Agents() {
                   <p className="text-[11px] text-muted-foreground mt-0.5 truncate">
                     {getModelDisplay(a)}{a.model_provider && ` · ${a.model_provider}`}{a.description ? ` · ${a.description}` : ""}
                   </p>
-                  {/* Resource badges */}
+                                    {/* Resource badges */}
                   <div className="flex items-center gap-1.5 mt-1.5">
                     <button onClick={(e) => { e.stopPropagation(); navigate(`/agents/${a.id}?tab=skills`) }} className="flex items-center gap-1 px-1.5 py-0.5 rounded-full text-[10px] bg-secondary/50 text-muted-foreground hover:text-foreground hover:bg-secondary transition-colors">
-                      <Zap className="h-2.5 w-2.5" />{a.skills_count ?? 0} skills
+                      <Zap className="h-2.5 w-2.5" />{a.skills_count ?? 0} {t("skills.title").toLowerCase()}
                     </button>
                     <button onClick={(e) => { e.stopPropagation(); navigate(`/agents/${a.id}?tab=mcp`) }} className="flex items-center gap-1 px-1.5 py-0.5 rounded-full text-[10px] bg-secondary/50 text-muted-foreground hover:text-foreground hover:bg-secondary transition-colors">
-                      <Plug className="h-2.5 w-2.5" />{a.mcp_count ?? 0} mcp
+                      <Plug className="h-2.5 w-2.5" />{a.mcp_count ?? 0} MCP
                     </button>
                     <button onClick={(e) => { e.stopPropagation(); navigate(`/agents/${a.id}?tab=resources`) }} className="flex items-center gap-1 px-1.5 py-0.5 rounded-full text-[10px] bg-secondary/50 text-muted-foreground hover:text-foreground hover:bg-secondary transition-colors">
-                      <Server className="h-2.5 w-2.5" />{(a.clusters_count ?? 0) + (a.hosts_count ?? 0)} resources
+                      <Server className="h-2.5 w-2.5" />{(a.clusters_count ?? 0) + (a.hosts_count ?? 0)} {t("clusters.title").toLowerCase()}
                     </button>
                     {(a.tasks_count ?? 0) > 0 && (
                       <button onClick={(e) => { e.stopPropagation(); navigate(`/agents/${a.id}?tab=tasks`) }} className="flex items-center gap-1 px-1.5 py-0.5 rounded-full text-[10px] bg-secondary/50 text-muted-foreground hover:text-foreground hover:bg-secondary transition-colors">
-                        <Clock className="h-2.5 w-2.5" />{a.tasks_active_count ?? 0}/{a.tasks_count} scheduled
+                        <Clock className="h-2.5 w-2.5" />{a.tasks_active_count ?? 0}/{a.tasks_count} {t("tasks.title").toLowerCase()}
                       </button>
                     )}
                     <button onClick={(e) => { e.stopPropagation(); navigate(`/agents/${a.id}?tab=knowledge`) }} className="flex items-center gap-1 px-1.5 py-0.5 rounded-full text-[10px] bg-secondary/50 text-muted-foreground hover:text-foreground hover:bg-secondary transition-colors">
-                      <BookOpen className="h-2.5 w-2.5" />{a.knowledge_count ?? 0} knowledge
+                      <BookOpen className="h-2.5 w-2.5" />{a.knowledge_count ?? 0} {t("knowledge.title").toLowerCase()}
                     </button>
                   </div>
                 </div>
 
-                {/* Actions */}
+                                {/* Actions */}
                 <div className="flex items-center gap-0.5 shrink-0">
-                  <Tooltip content="Chat"><button onClick={(e) => { e.stopPropagation(); navigate(`/chat?agent=${a.id}`) }} className="p-1.5 rounded-md hover:bg-secondary text-muted-foreground hover:text-foreground"><MessageSquare className="h-4 w-4" /></button></Tooltip>
-                  <Tooltip content="Clear Memory"><button onClick={(e) => { e.stopPropagation(); handleClearMemory(a.id) }} className="p-1.5 rounded-md hover:bg-secondary text-muted-foreground hover:text-foreground"><Eraser className="h-4 w-4" /></button></Tooltip>
-                  <Tooltip content="Settings"><button onClick={(e) => { e.stopPropagation(); navigate(`/agents/${a.id}?tab=basic`) }} className="p-1.5 rounded-md hover:bg-secondary text-muted-foreground hover:text-foreground"><Settings className="h-4 w-4" /></button></Tooltip>
-                  <Tooltip content="Delete"><button onClick={(e) => { e.stopPropagation(); handleDelete(a.id) }} className="p-1.5 rounded-md hover:bg-destructive/20 text-muted-foreground hover:text-red-400"><Trash2 className="h-4 w-4" /></button></Tooltip>
+                  <Tooltip content={t("chat.title")}><button onClick={(e) => { e.stopPropagation(); navigate(`/chat?agent=${a.id}`) }} className="p-1.5 rounded-md hover:bg-secondary text-muted-foreground hover:text-foreground"><MessageSquare className="h-4 w-4" /></button></Tooltip>
+                  <Tooltip content={t("agents.clearMemory")}><button onClick={(e) => { e.stopPropagation(); handleClearMemory(a.id) }} className="p-1.5 rounded-md hover:bg-secondary text-muted-foreground hover:text-foreground"><Eraser className="h-4 w-4" /></button></Tooltip>
+                  <Tooltip content={t("common.edit")}><button onClick={(e) => { e.stopPropagation(); navigate(`/agents/${a.id}?tab=basic`) }} className="p-1.5 rounded-md hover:bg-secondary text-muted-foreground hover:text-foreground"><Settings className="h-4 w-4" /></button></Tooltip>
+                  <Tooltip content={t("common.delete")}><button onClick={(e) => { e.stopPropagation(); handleDelete(a.id) }} className="p-1.5 rounded-md hover:bg-destructive/20 text-muted-foreground hover:text-red-400"><Trash2 className="h-4 w-4" /></button></Tooltip>
                 </div>
               </div>
             ))}

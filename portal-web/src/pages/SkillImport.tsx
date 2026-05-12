@@ -1,9 +1,12 @@
 import { useState, useEffect, useRef, useCallback } from "react"
 import { useNavigate } from "react-router-dom"
+import { useTranslation } from "react-i18next"
 import { Upload, History, RotateCcw, Loader2, AlertTriangle, ArrowLeft, FileArchive, CheckCircle, Plus, Minus, RefreshCw } from "lucide-react"
 import { api } from "../api"
 import { useToast } from "../components/toast"
 import { useConfirm } from "../components/confirm-dialog"
+
+type TranslateFunction = (key: string, options?: Record<string, unknown>) => string
 
 // ── Types ────────────────────────────────────────────────────────
 
@@ -39,6 +42,7 @@ type Tab = "import" | "history"
 // ── Component ────────────────────────────────────────────────────
 
 export function SkillImport() {
+  const { t } = useTranslation()
   const navigate = useNavigate()
   const toast = useToast()
   const confirmDialog = useConfirm()
@@ -76,7 +80,7 @@ export function SkillImport() {
   const handleFileSelect = (f: File | undefined) => {
     if (!f) return
     if (!f.name.endsWith(".zip")) {
-      toast.error("Only .zip files are accepted")
+      toast.error(t("skillImport.onlyZipAccepted"))
       return
     }
     setFile(f)
@@ -124,10 +128,10 @@ export function SkillImport() {
   const handleImport = async () => {
     if (!file || !preview) return
     const ok = await confirmDialog({
-      title: "Confirm Import",
-      message: `Import skill pack? This will apply ${preview.total_added} added, ${preview.total_updated} updated, and ${preview.total_deleted} deleted skills.`,
-      confirmLabel: "Import",
-    })
+          title: t("skillImport.confirmImportTitle"),
+          message: t("skillImport.confirmImportMessage", { 0: preview.total_added, 1: preview.total_updated, 2: preview.total_deleted }),
+          confirmLabel: t("skillImport.import"),
+        })
     if (!ok) return
     setImporting(true)
     try {
@@ -146,7 +150,7 @@ export function SkillImport() {
         const body = await res.json().catch(() => ({ error: res.statusText }))
         throw new Error(body.error || `HTTP ${res.status}`)
       }
-      toast.success("Skill pack imported successfully")
+      toast.success(t("skillImport.importSuccess"))
       setFile(null)
       setPreview(null)
       setComment("")
@@ -161,11 +165,11 @@ export function SkillImport() {
 
   const handleRollback = async (version: number) => {
     const ok = await confirmDialog({
-      title: "Rollback to Version",
-      message: `Roll back to version ${version}? Current skills will be replaced with that snapshot.`,
-      confirmLabel: "Rollback",
-      destructive: true,
-    })
+          title: t("skillImport.rollbackToVersion"),
+          message: t("skillImport.rollbackConfirmMessage", { 0: version }),
+          confirmLabel: t("skillImport.rollback"),
+          destructive: true,
+        })
     if (!ok) return
     setRollingBack(version)
     try {
@@ -173,7 +177,7 @@ export function SkillImport() {
         method: "POST",
         body: { version },
       })
-      toast.success(`Rolled back to version ${version}`)
+      toast.success(t("skillImport.rolledBackMessage", { 0: version }))
       loadHistory()
     } catch (err: any) {
       toast.error(err.message)
@@ -189,15 +193,15 @@ export function SkillImport() {
       {/* Header */}
       <div className="flex items-center justify-between px-6 py-4 border-b border-border">
         <div>
-          <h1 className="text-lg font-semibold">Skill Import</h1>
-          <p className="text-sm text-muted-foreground">Import and manage builtin skill packs</p>
-        </div>
-        <button
-          onClick={() => navigate("/skills")}
-          className="flex items-center gap-1.5 h-8 px-3 text-sm rounded-md border border-border text-muted-foreground hover:text-foreground"
-        >
-          <ArrowLeft className="h-3.5 w-3.5" /> Back to Skills
-        </button>
+                  <h1 className="text-lg font-semibold">{t("skillImport.title")}</h1>
+                  <p className="text-sm text-muted-foreground">{t("skillImport.subtitle")}</p>
+                </div>
+                <button
+                  onClick={() => navigate("/skills")}
+                  className="flex items-center gap-1.5 h-8 px-3 text-sm rounded-md border border-border text-muted-foreground hover:text-foreground"
+                >
+                  <ArrowLeft className="h-3.5 w-3.5" /> {t("skillImport.backToSkills")}
+                </button>
       </div>
 
       {/* Tabs */}
@@ -210,17 +214,17 @@ export function SkillImport() {
               : "bg-transparent text-muted-foreground border-transparent hover:bg-secondary"
           }`}
         >
-          <Upload className="h-3.5 w-3.5" /> Import
-        </button>
-        <button
-          onClick={() => setTab("history")}
-          className={`flex items-center gap-1.5 px-3 py-1.5 rounded-full text-[12px] font-medium transition-all border ${
-            tab === "history"
-              ? "bg-foreground text-background border-foreground"
-              : "bg-transparent text-muted-foreground border-transparent hover:bg-secondary"
-          }`}
-        >
-          <History className="h-3.5 w-3.5" /> History
+          <Upload className="h-3.5 w-3.5" /> {t("skillImport.import")}
+                  </button>
+                  <button
+                    onClick={() => setTab("history")}
+                    className={`flex items-center gap-1.5 px-3 py-1.5 rounded-full text-[12px] font-medium transition-all border ${
+                      tab === "history"
+                        ? "bg-foreground text-background border-foreground"
+                        : "bg-transparent text-muted-foreground border-transparent hover:bg-secondary"
+                    }`}
+                  >
+                    <History className="h-3.5 w-3.5" /> {t("skillImport.history")}
         </button>
       </div>
 
@@ -230,7 +234,7 @@ export function SkillImport() {
           <div className="max-w-2xl space-y-5">
             {/* File drop zone */}
             <div>
-              <label className="block text-sm font-medium mb-2">Skill Pack (.zip)</label>
+              <label className="block text-sm font-medium mb-2">{t("skillImport.skillPack")}</label>
               <div
                 onDragOver={e => { e.preventDefault(); setDragOver(true) }}
                 onDragLeave={() => setDragOver(false)}
@@ -256,14 +260,14 @@ export function SkillImport() {
                     <FileArchive className="h-8 w-8 text-green-400" />
                     <div className="text-center">
                       <p className="text-sm font-medium text-green-400">{file.name}</p>
-                      <p className="text-xs text-muted-foreground mt-0.5">{(file.size / 1024).toFixed(1)} KB — click to replace</p>
+                      <p className="text-xs text-muted-foreground mt-0.5">{(file.size / 1024).toFixed(1)} KB — {t("skillImport.clickToReplace")}</p>
                     </div>
                   </>
                 ) : (
                   <>
                     <Upload className="h-8 w-8 text-muted-foreground/50" />
                     <div className="text-center">
-                      <p className="text-sm text-muted-foreground">Drag & drop a .zip file or click to select</p>
+                      <p className="text-sm text-muted-foreground">{t("skillImport.dragDropHint")}</p>
                     </div>
                   </>
                 )}
@@ -272,13 +276,13 @@ export function SkillImport() {
 
             {/* Comment field */}
             <div>
-              <label className="block text-sm font-medium mb-1">Comment <span className="text-muted-foreground font-normal">(optional)</span></label>
-              <input
-                value={comment}
-                onChange={e => setComment(e.target.value)}
-                placeholder="Describe this import..."
-                className="w-full h-8 px-3 text-sm rounded-md border border-border bg-background"
-              />
+              <label className="block text-sm font-medium mb-1">{t("skillImport.comment")} <span className="text-muted-foreground font-normal">({t("common.optional")})</span></label>
+                            <input
+                              value={comment}
+                              onChange={e => setComment(e.target.value)}
+                              placeholder={t("skillImport.describeImport")}
+                              className="w-full h-8 px-3 text-sm rounded-md border border-border bg-background"
+                            />
             </div>
 
             {/* Action buttons */}
@@ -289,18 +293,18 @@ export function SkillImport() {
                 className="flex items-center gap-1.5 h-8 px-4 text-sm rounded-md border border-border text-foreground hover:bg-secondary/50 disabled:opacity-50"
               >
                 {previewing ? <Loader2 className="h-3.5 w-3.5 animate-spin" /> : <Upload className="h-3.5 w-3.5" />}
-                Preview
-              </button>
+                                {t("skillImport.preview")}
+                              </button>
 
-              {preview && (
-                <button
-                  onClick={handleImport}
-                  disabled={importing}
-                  className="flex items-center gap-1.5 h-8 px-4 text-sm rounded-md bg-primary text-primary-foreground hover:opacity-90 disabled:opacity-50"
-                >
-                  {importing ? <Loader2 className="h-3.5 w-3.5 animate-spin" /> : <CheckCircle className="h-3.5 w-3.5" />}
-                  Confirm Import
-                </button>
+                              {preview && (
+                                <button
+                                  onClick={handleImport}
+                                  disabled={importing}
+                                  className="flex items-center gap-1.5 h-8 px-4 text-sm rounded-md bg-primary text-primary-foreground hover:opacity-90 disabled:opacity-50"
+                                >
+                                  {importing ? <Loader2 className="h-3.5 w-3.5 animate-spin" /> : <CheckCircle className="h-3.5 w-3.5" />}
+                                  {t("skillImport.confirmImport")}
+                                </button>
               )}
 
             </div>
@@ -311,38 +315,38 @@ export function SkillImport() {
                 {/* Summary counts */}
                 <div className="flex items-center gap-3 flex-wrap">
                   <span className="flex items-center gap-1.5 px-2.5 py-1 rounded-full text-[12px] font-medium bg-green-500/15 text-green-400">
-                    <Plus className="h-3 w-3" /> {preview.total_added} added
-                  </span>
-                  <span className="flex items-center gap-1.5 px-2.5 py-1 rounded-full text-[12px] font-medium bg-yellow-500/15 text-yellow-400">
-                    <RefreshCw className="h-3 w-3" /> {preview.total_updated} updated
-                  </span>
-                  <span className="flex items-center gap-1.5 px-2.5 py-1 rounded-full text-[12px] font-medium bg-red-500/15 text-red-400">
-                    <Minus className="h-3 w-3" /> {preview.total_deleted} deleted
-                  </span>
-                  <span className="flex items-center gap-1.5 px-2.5 py-1 rounded-full text-[12px] font-medium bg-secondary text-muted-foreground">
-                    {preview.total_unchanged} unchanged
-                  </span>
+                                      <Plus className="h-3 w-3" /> {preview.total_added} {t("skillImport.added")}
+                                    </span>
+                                    <span className="flex items-center gap-1.5 px-2.5 py-1 rounded-full text-[12px] font-medium bg-yellow-500/15 text-yellow-400">
+                                      <RefreshCw className="h-3 w-3" /> {preview.total_updated} {t("skillImport.updated")}
+                                    </span>
+                                    <span className="flex items-center gap-1.5 px-2.5 py-1 rounded-full text-[12px] font-medium bg-red-500/15 text-red-400">
+                                      <Minus className="h-3 w-3" /> {preview.total_deleted} {t("skillImport.deleted")}
+                                    </span>
+                                    <span className="flex items-center gap-1.5 px-2.5 py-1 rounded-full text-[12px] font-medium bg-secondary text-muted-foreground">
+                                      {preview.total_unchanged} {t("skillImport.unchanged")}
+                                    </span>
                 </div>
 
                 {/* Added */}
                 {preview.added.length > 0 && (
-                  <DiffSection title="Added" color="green" items={preview.added} />
-                )}
+                                  <DiffSection title={t("skillImport.added")} color="green" items={preview.added} t={t} />
+                                )}
 
-                {/* Updated */}
-                {preview.updated.length > 0 && (
-                  <DiffSection title="Updated" color="yellow" items={preview.updated} />
-                )}
+                                {/* Updated */}
+                                {preview.updated.length > 0 && (
+                                  <DiffSection title={t("skillImport.updated")} color="yellow" items={preview.updated} t={t} />
+                                )}
 
-                {/* Deleted */}
-                {preview.deleted.length > 0 && (
-                  <DiffSection title="Deleted" color="red" items={preview.deleted} showAgentWarning />
-                )}
+                                {/* Deleted */}
+                                {preview.deleted.length > 0 && (
+                                  <DiffSection title={t("skillImport.deleted")} color="red" items={preview.deleted} showAgentWarning t={t} />
+                                )}
 
-                {/* Unchanged */}
-                {preview.unchanged.length > 0 && (
-                  <DiffSection title="Unchanged" color="gray" items={preview.unchanged} />
-                )}
+                                {/* Unchanged */}
+                                {preview.unchanged.length > 0 && (
+                                  <DiffSection title={t("skillImport.unchanged")} color="gray" items={preview.unchanged} t={t} />
+                                )}
               </div>
             )}
           </div>
@@ -354,9 +358,9 @@ export function SkillImport() {
             </div>
           ) : history.length === 0 ? (
             <div className="flex flex-col items-center justify-center py-20">
-              <History className="h-12 w-12 text-muted-foreground/20 mb-3" />
-              <p className="text-sm text-muted-foreground">No import history yet</p>
-            </div>
+                          <History className="h-12 w-12 text-muted-foreground/20 mb-3" />
+                          <p className="text-sm text-muted-foreground">{t("skillImport.noImportHistory")}</p>
+                        </div>
           ) : (
             <div className="max-w-2xl space-y-2">
               {history.map(v => (
@@ -367,19 +371,19 @@ export function SkillImport() {
                     </div>
                     <div className="min-w-0">
                       <div className="flex items-center gap-2 flex-wrap">
-                        <p className="text-sm font-medium truncate">{v.comment || "No comment"}</p>
-                        <span className="text-[10px] text-muted-foreground">{v.skill_count} skills</span>
-                      </div>
-                      <div className="flex items-center gap-2 mt-0.5 flex-wrap">
-                        {v.added > 0 && (
-                          <span className="text-[10px] text-green-400">+{v.added} added</span>
-                        )}
-                        {v.updated > 0 && (
-                          <span className="text-[10px] text-yellow-400">~{v.updated} updated</span>
-                        )}
-                        {v.deleted > 0 && (
-                          <span className="text-[10px] text-red-400">-{v.deleted} deleted</span>
-                        )}
+                        <p className="text-sm font-medium truncate">{v.comment || t("skillImport.noComment")}</p>
+                                                <span className="text-[10px] text-muted-foreground">{v.skill_count} {t("skillImport.skills")}</span>
+                                              </div>
+                                              <div className="flex items-center gap-2 mt-0.5 flex-wrap">
+                                                {v.added > 0 && (
+                                                  <span className="text-[10px] text-green-400">+{v.added} {t("skillImport.added")}</span>
+                                                )}
+                                                {v.updated > 0 && (
+                                                  <span className="text-[10px] text-yellow-400">~{v.updated} {t("skillImport.updated")}</span>
+                                                )}
+                                                {v.deleted > 0 && (
+                                                  <span className="text-[10px] text-red-400">-{v.deleted} {t("skillImport.deleted")}</span>
+                                                )}
                         <span className="text-[10px] text-muted-foreground">{new Date(v.created_at).toLocaleString()}</span>
                       </div>
                     </div>
@@ -387,15 +391,15 @@ export function SkillImport() {
                   <button
                     onClick={() => handleRollback(v.version)}
                     disabled={rollingBack === v.version}
-                    title={`Roll back to version ${v.version}`}
+                    title={t("skillImport.rollbackToVersion")}
                     className="flex items-center gap-1.5 h-7 px-2.5 text-[12px] rounded-md border border-border text-muted-foreground hover:text-foreground hover:border-border/80 disabled:opacity-50 shrink-0 ml-3"
                   >
                     {rollingBack === v.version ? (
                       <Loader2 className="h-3 w-3 animate-spin" />
                     ) : (
                       <RotateCcw className="h-3 w-3" />
-                    )}
-                    Rollback
+        )}
+                    {t("skillImport.rollback")}
                   </button>
                 </div>
               ))}
@@ -417,12 +421,13 @@ const COLOR_MAP = {
 }
 
 function DiffSection({
-  title, color, items, showAgentWarning,
+  title, color, items, showAgentWarning, t,
 }: {
   title: string
   color: keyof typeof COLOR_MAP
   items: DiffEntry[]
   showAgentWarning?: boolean
+  t: TranslateFunction
 }) {
   const c = COLOR_MAP[color]
   return (
@@ -440,7 +445,7 @@ function DiffSection({
               {showAgentWarning && item.bound_agents && item.bound_agents.length > 0 && (
                 <span className="flex items-center gap-1 text-[10px] text-amber-400">
                   <AlertTriangle className="h-3 w-3" />
-                  {item.bound_agents.length} agent{item.bound_agents.length !== 1 ? "s" : ""} affected
+                  {item.bound_agents.length} {item.bound_agents.length !== 1 ? t("skillImport.agentsAffected") : t("skillImport.agentAffected")}
                 </span>
               )}
             </div>
@@ -453,3 +458,5 @@ function DiffSection({
     </div>
   )
 }
+
+
