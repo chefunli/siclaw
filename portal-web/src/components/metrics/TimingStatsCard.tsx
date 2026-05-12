@@ -12,17 +12,12 @@
  * for a turn is what gets aggregated here for the period.
  */
 import { useState } from "react"
+import { useTranslation } from "react-i18next"
 import type { LatencyStats, TimingStats, ToolLatencyStats } from "../../hooks/useMetrics"
 
 interface Props {
   data: TimingStats | null
   period: "today" | "7d" | "30d"
-}
-
-const PERIOD_LABEL: Record<Props["period"], string> = {
-  today: "today",
-  "7d": "last 7 days",
-  "30d": "last 30 days",
 }
 
 const TOP_OPTIONS = [3, 5, 10] as const
@@ -38,31 +33,38 @@ function fmtMs(ms: number): string {
   return `${m}m ${s}s`
 }
 
-const MODEL_ROWS: Array<{ key: "ttft" | "thinking"; emoji: string; label: string; hint: string }> = [
-  { key: "ttft", emoji: "⏳", label: "TTFT", hint: "first token" },
-  { key: "thinking", emoji: "💭", label: "Thinking", hint: "boundary → first token" },
-]
-
 export function TimingStatsCard({ data, period }: Props) {
+  const { t } = useTranslation()
   const [topN, setTopN] = useState<TopN>(3)
   const tools = data?.tools ?? []
   const visibleTools = tools.slice(0, topN)
+
+  const periodLabels = {
+    today: t("metrics.todayLabel"),
+    "7d": t("metrics.last7daysLabel"),
+    "30d": t("metrics.last30daysLabel"),
+  }
+
+  const modelRows = [
+    { key: "ttft" as const, emoji: "⏳", label: t("metrics.ttft"), hint: t("metrics.firstToken") },
+    { key: "thinking" as const, emoji: "💭", label: t("metrics.thinking"), hint: t("metrics.boundaryToFirstToken") },
+  ]
 
   return (
     <div className="border border-border rounded-lg bg-card p-4">
       <div className="flex items-center justify-between mb-3">
         <div>
-          <h3 className="text-sm font-semibold tracking-tight">Latency Breakdown</h3>
+          <h3 className="text-sm font-semibold tracking-tight">{t("metrics.latencyBreakdown")}</h3>
           <p className="text-[11px] text-muted-foreground mt-0.5">
-            avg · min · max · p90 · {PERIOD_LABEL[period]}
+            {t("metrics.avgMinMaxP90")} · {periodLabels[period]}
           </p>
         </div>
         {data?.truncated && (
           <span
-            title="Query hit the row-scan cap; figures are a recency-biased sample, not the full window."
+            title={t("metrics.sampledHint")}
             className="text-[10px] uppercase tracking-wider px-1.5 py-0.5 rounded border border-amber-500/40 text-amber-500 select-text"
           >
-            sampled
+            {t("metrics.sampled")}
           </span>
         )}
       </div>
@@ -70,7 +72,7 @@ export function TimingStatsCard({ data, period }: Props) {
       {/* ── Model section: ⏳ + 💭 ───────────────────── */}
       <StatGrid>
         <GridHeader />
-        {MODEL_ROWS.map((row) => {
+        {modelRows.map((row) => {
           const stats: LatencyStats = data?.[row.key] ?? { count: 0, avg: 0, min: 0, max: 0, p90: 0 }
           const empty = stats.count === 0
           return <Row key={row.key} emoji={row.emoji} label={row.label} hint={row.hint} stats={stats} empty={empty} />
@@ -85,9 +87,9 @@ export function TimingStatsCard({ data, period }: Props) {
                 bubble's ⚙️ but at twice the body-text size for visual weight. */}
             <span className="text-[13px] leading-none select-none" aria-hidden="true">⚙️</span>
             <div className="flex items-baseline gap-2">
-              <h4 className="text-[11px] font-semibold text-foreground">Tools</h4>
+              <h4 className="text-[11px] font-semibold text-foreground">{t("metrics.toolsLabel")}</h4>
               <span className="text-[10px] text-muted-foreground">
-                top {Math.min(topN, tools.length)} of {tools.length} · by invocation count
+                {t("metrics.top")} {Math.min(topN, tools.length)} {t("metrics.of")} {tools.length} · {t("metrics.byInvocationCountShort")}
               </span>
             </div>
           </div>
@@ -104,7 +106,7 @@ export function TimingStatsCard({ data, period }: Props) {
                     : "border-border bg-secondary text-muted-foreground hover:text-foreground")
                 }
               >
-                Top {n}
+                {t("metrics.top")} {n}
               </button>
             ))}
           </div>
@@ -112,7 +114,7 @@ export function TimingStatsCard({ data, period }: Props) {
 
         {visibleTools.length === 0 ? (
           <div className="text-[11px] text-muted-foreground/70 py-2 select-text">
-            No tool executions in this window.
+            {t("metrics.noToolExecutions")}
           </div>
         ) : (
           <StatGrid>
@@ -127,7 +129,7 @@ export function TimingStatsCard({ data, period }: Props) {
                   key={tool.toolName}
                   emoji="🔧"
                   label={tool.toolName}
-                  hint="tool execution"
+                  hint={t("metrics.toolExecution")}
                   stats={tool}
                   empty={empty}
                 />
@@ -149,14 +151,15 @@ function StatGrid({ children }: { children: React.ReactNode }) {
 }
 
 function GridHeader() {
+  const { t } = useTranslation()
   return (
     <>
       <div />
-      <div className="text-[10px] uppercase tracking-wider text-muted-foreground text-right">avg</div>
-      <div className="text-[10px] uppercase tracking-wider text-muted-foreground text-right">min</div>
-      <div className="text-[10px] uppercase tracking-wider text-muted-foreground text-right">max</div>
-      <div className="text-[10px] uppercase tracking-wider text-muted-foreground text-right">p90</div>
-      <div className="text-[10px] uppercase tracking-wider text-muted-foreground text-right">n</div>
+      <div className="text-[10px] uppercase tracking-wider text-muted-foreground text-right">{t("metrics.avg")}</div>
+      <div className="text-[10px] uppercase tracking-wider text-muted-foreground text-right">{t("metrics.min")}</div>
+      <div className="text-[10px] uppercase tracking-wider text-muted-foreground text-right">{t("metrics.max")}</div>
+      <div className="text-[10px] uppercase tracking-wider text-muted-foreground text-right">{t("metrics.p90")}</div>
+      <div className="text-[10px] uppercase tracking-wider text-muted-foreground text-right">{t("metrics.n")}</div>
     </>
   )
 }

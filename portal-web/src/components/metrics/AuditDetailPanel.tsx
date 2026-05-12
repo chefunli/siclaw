@@ -1,5 +1,6 @@
 import { useState } from "react"
 import { Loader2 } from "lucide-react"
+import { useTranslation } from "react-i18next"
 import { useAuditDetail, type AuditLog } from "../../hooks/useMetrics"
 
 function formatDuration(ms: number | null): string {
@@ -9,17 +10,18 @@ function formatDuration(ms: number | null): string {
 }
 
 export function AuditDetailPanel({ log }: { log: AuditLog }) {
+  const { t } = useTranslation()
   const { detail, loading } = useAuditDetail(log.id)
   const [showFull, setShowFull] = useState(false)
 
   if (loading) {
     return (
       <div className="flex items-center gap-2 text-muted-foreground text-[12px]">
-        <Loader2 className="w-4 h-4 animate-spin" /> Loading…
+        <Loader2 className="w-4 h-4 animate-spin" /> {t("metrics.loading")}
       </div>
     )
   }
-  if (!detail) return <div className="text-muted-foreground text-[12px]">Failed to load details</div>
+  if (!detail) return <div className="text-muted-foreground text-[12px]">{t("metrics.failedToLoadDetails")}</div>
 
   // Try to parse toolInput for structured display
   let parsedInput: Record<string, unknown> | null = null
@@ -37,33 +39,33 @@ export function AuditDetailPanel({ log }: { log: AuditLog }) {
   return (
     <div className="space-y-3">
       <div className="grid grid-cols-[auto_1fr] gap-x-6 gap-y-1.5 text-[12px]">
-        <span className="text-muted-foreground">Tool</span>
+        <span className="text-muted-foreground">{t("metrics.toolLabel")}</span>
         <span className="font-mono">{detail.toolName ?? "—"}</span>
 
         {parsedInput && detail.toolName === "local_script" && (
           <>
-            <span className="text-muted-foreground">Skill</span>
+            <span className="text-muted-foreground">{t("metrics.skillLabel")}</span>
             <span className="font-mono">{String((parsedInput as Record<string, unknown>).skill ?? "")}</span>
-            <span className="text-muted-foreground">Script</span>
+            <span className="text-muted-foreground">{t("metrics.scriptLabel")}</span>
             <span className="font-mono">{String((parsedInput as Record<string, unknown>).script ?? "")}</span>
             {(parsedInput as Record<string, unknown>).args && (
               <>
-                <span className="text-muted-foreground">Args</span>
+                <span className="text-muted-foreground">{t("metrics.argsLabel")}</span>
                 <span className="font-mono text-muted-foreground">{String((parsedInput as Record<string, unknown>).args)}</span>
               </>
             )}
           </>
         )}
 
-        <span className="text-muted-foreground">Outcome</span>
+        <span className="text-muted-foreground">{t("metrics.outcomeLabel")}</span>
         <span className={`font-medium ${outcomeColor}`}>{detail.outcome ?? "—"}</span>
 
-        <span className="text-muted-foreground">Duration</span>
+        <span className="text-muted-foreground">{t("metrics.durationLabel")}</span>
         <span>{formatDuration(detail.durationMs)}</span>
 
         {detail.sessionId && (
           <>
-            <span className="text-muted-foreground">Session</span>
+            <span className="text-muted-foreground">{t("metrics.sessionLabel")}</span>
             <span className="font-mono text-[11px] text-muted-foreground">{detail.sessionId}</span>
           </>
         )}
@@ -71,7 +73,7 @@ export function AuditDetailPanel({ log }: { log: AuditLog }) {
 
       {detail.toolInput && (
         <div>
-          <div className="text-[10px] uppercase tracking-wider text-muted-foreground mb-1">Command</div>
+          <div className="text-[10px] uppercase tracking-wider text-muted-foreground mb-1">{t("metrics.commandLabel")}</div>
           <pre className="p-3 bg-black/60 text-foreground rounded-md text-[11px] font-mono overflow-auto max-h-48 border border-border">
 {detail.toolInput}
           </pre>
@@ -80,7 +82,7 @@ export function AuditDetailPanel({ log }: { log: AuditLog }) {
 
       {content && (
         <div>
-          <div className="text-[10px] uppercase tracking-wider text-muted-foreground mb-1">Output</div>
+          <div className="text-[10px] uppercase tracking-wider text-muted-foreground mb-1">{t("metrics.outputLabel")}</div>
           <pre className={`p-3 bg-black/60 text-foreground rounded-md text-[11px] font-mono overflow-auto border border-border ${!showFull && isLong ? "max-h-64" : "max-h-[500px]"}`}>
 {displayContent}
           </pre>
@@ -89,7 +91,7 @@ export function AuditDetailPanel({ log }: { log: AuditLog }) {
               onClick={() => setShowFull(!showFull)}
               className="mt-1 text-[11px] text-blue-400 hover:text-blue-300"
             >
-              {showFull ? "Show less" : "Show full output"}
+              {showFull ? t("metrics.showLess") : t("metrics.showFullOutput")}
             </button>
           )}
         </div>

@@ -3,29 +3,33 @@ import { Outlet, Link, useLocation } from "react-router-dom"
 import { Bot, MessageSquare, Zap, Plug, Settings, LogOut, Server, Monitor, ChevronDown, ChevronRight, Cpu, Users, Radio, BarChart3, BookOpen, PanelLeftClose, PanelLeftOpen, Sun, Moon } from "lucide-react"
 import { api, clearToken } from "../api"
 import { NotificationBell } from "../components/NotificationBell"
+import { LanguageSwitcher } from "../components/LanguageSwitcher"
 import { useTheme } from "../hooks/useTheme"
-
-const siclawItems = [
-  { path: "/chat", label: "Chat", icon: MessageSquare },
-  { path: "/agents", label: "Agents", icon: Bot },
-  { path: "/skills", label: "Skills", icon: Zap },
-  { path: "/mcp", label: "MCP", icon: Plug },
-]
-
-const settingsItems = [
-  { path: "/settings/users", label: "Users", icon: Users },
-  { path: "/settings/clusters", label: "Clusters", icon: Server },
-  { path: "/settings/hosts", label: "Hosts", icon: Monitor },
-  { path: "/settings/channels", label: "Channels", icon: Radio },
-  { path: "/settings/models", label: "Models", icon: Cpu },
-  { path: "/settings/knowledge", label: "Knowledge", icon: BookOpen },
-]
+import { useTranslation } from "react-i18next"
 
 const COLLAPSED_KEY = "siclaw.sidebar.collapsed"
 
 export function Layout() {
+  const { t } = useTranslation()
   const location = useLocation()
   const { theme, toggle: toggleTheme } = useTheme()
+  
+  const siclawItems = [
+    { path: "/chat", label: t("layout.chat"), icon: MessageSquare },
+    { path: "/agents", label: t("layout.agents"), icon: Bot },
+    { path: "/skills", label: t("layout.skills"), icon: Zap },
+    { path: "/mcp", label: t("layout.mcp"), icon: Plug },
+  ]
+
+  const settingsItems = [
+    { path: "/settings/users", label: t("layout.users"), icon: Users },
+    { path: "/settings/clusters", label: t("layout.clusters"), icon: Server },
+    { path: "/settings/hosts", label: t("layout.hosts"), icon: Monitor },
+    { path: "/settings/channels", label: t("layout.channels"), icon: Radio },
+    { path: "/settings/models", label: t("layout.models"), icon: Cpu },
+    { path: "/settings/knowledge", label: t("layout.knowledge"), icon: BookOpen },
+  ]
+  
   const [collapsed, setCollapsed] = useState<boolean>(() => {
     try { return localStorage.getItem(COLLAPSED_KEY) === "1" } catch { return false }
   })
@@ -74,10 +78,10 @@ export function Layout() {
           {!collapsed && (
             <div className="min-w-0 flex-1">
               <div className="flex items-center gap-1.5">
-                <h1 className="text-sm font-bold tracking-wide">SICLAW</h1>
+                <h1 className="text-sm font-bold tracking-wide">{t("layout.title")}</h1>
                 <button
                   onClick={toggleTheme}
-                  title={theme === "dark" ? "Switch to light theme" : "Switch to dark theme"}
+                  title={theme === "dark" ? t("layout.switchToLight") : t("layout.switchToDark")}
                   aria-label="Toggle theme"
                   className="h-5 w-5 inline-flex items-center justify-center rounded text-muted-foreground hover:text-foreground hover:bg-secondary/50 transition-colors"
                 >
@@ -85,14 +89,15 @@ export function Layout() {
                     ? <Sun className="h-3.5 w-3.5" />
                     : <Moon className="h-3.5 w-3.5" />}
                 </button>
+                <LanguageSwitcher />
               </div>
-              <p className="text-[10px] text-muted-foreground mt-0.5 truncate">Agent Runtime Portal</p>
+              <p className="text-[10px] text-muted-foreground mt-0.5 truncate">{t("layout.subtitle")}</p>
             </div>
           )}
           <button
             onClick={() => setCollapsed(!collapsed)}
-            title={collapsed ? "Expand sidebar (⌘B)" : "Collapse sidebar (⌘B)"}
-            aria-label={collapsed ? "Expand sidebar" : "Collapse sidebar"}
+            title={collapsed ? t("layout.expandSidebar") : t("layout.collapseSidebar")}
+            aria-label={collapsed ? t("layout.expandSidebar") : t("layout.collapseSidebar")}
             className="p-1 rounded-md text-muted-foreground hover:text-foreground hover:bg-secondary/50 transition-colors"
           >
             {collapsed
@@ -104,7 +109,7 @@ export function Layout() {
         <nav className="flex-1 py-2 overflow-y-auto overflow-x-hidden">
           {!collapsed && (
             <span className="px-4 py-1.5 text-[11px] font-medium tracking-wider text-muted-foreground block">
-              Siclaw
+              {t("layout.siclawGroup")}
             </span>
           )}
           {siclawItems.map(({ path, label, icon: Icon }) => (
@@ -124,8 +129,8 @@ export function Layout() {
               {collapsed ? (
                 <button
                   onClick={() => { setCollapsed(false); setSettingsOpen(true) }}
-                  title="Settings"
-                  aria-label="Settings"
+                  title={t("layout.settings")}
+                  aria-label={t("layout.settings")}
                   className={`${rowBase} ${rowLayout} w-full ${
                     isActive("/settings") ? rowActive : rowIdle
                   }`}
@@ -141,7 +146,7 @@ export function Layout() {
                     }`}
                   >
                     <Settings className="h-4 w-4 shrink-0" />
-                    <span className="flex-1 text-left">Settings</span>
+                    <span className="flex-1 text-left">{t("layout.settings")}</span>
                     {settingsOpen
                       ? <ChevronDown className="h-3.5 w-3.5" />
                       : <ChevronRight className="h-3.5 w-3.5" />}
@@ -167,13 +172,13 @@ export function Layout() {
         {isAdmin && (
           <Link
             to="/metrics"
-            title={collapsed ? "Metrics" : undefined}
+            title={collapsed ? t("layout.metrics") : undefined}
             className={`flex items-center ${collapsed ? "justify-center px-0" : "gap-2.5 px-4"} py-3 text-[13px] border-t border-border transition-colors ${
               isActive("/metrics") ? rowActive : rowIdle
             }`}
           >
             <BarChart3 className="h-4 w-4 shrink-0" />
-            {!collapsed && "Metrics"}
+            {!collapsed && t("layout.metrics")}
           </Link>
         )}
 
@@ -181,12 +186,12 @@ export function Layout() {
 
         <button
           onClick={() => { clearToken(); window.location.href = "/login" }}
-          title={collapsed ? "Logout" : undefined}
-          aria-label="Logout"
+          title={collapsed ? t("layout.logout") : undefined}
+          aria-label={t("layout.logout")}
           className={`flex items-center ${collapsed ? "justify-center px-0" : "gap-2.5 px-4"} py-3 text-[13px] text-muted-foreground hover:text-foreground border-t border-border`}
         >
           <LogOut className="h-4 w-4 shrink-0" />
-          {!collapsed && "Logout"}
+          {!collapsed && t("layout.logout")}
         </button>
       </aside>
       <main className="flex-1 overflow-hidden">

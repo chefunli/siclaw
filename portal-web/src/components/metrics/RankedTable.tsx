@@ -1,3 +1,5 @@
+import { useTranslation } from "react-i18next"
+
 const PALETTE = ["#60a5fa", "#34d399", "#a78bfa", "#fbbf24", "#f472b6", "#22d3ee", "#f87171", "#fb923c"]
 
 interface RankedItem {
@@ -16,6 +18,7 @@ interface Props {
 }
 
 export function RankedTable({ title, subtitle, items, limit = 10 }: Props) {
+  const { t } = useTranslation()
   const shown = items.slice(0, limit)
   const max = shown.reduce((m, i) => Math.max(m, i.total), 0) || 1
 
@@ -26,11 +29,11 @@ export function RankedTable({ title, subtitle, items, limit = 10 }: Props) {
           <h3 className="text-[13px] font-semibold">{title}</h3>
           {subtitle && <p className="text-[11px] text-muted-foreground mt-0.5">{subtitle}</p>}
         </div>
-        <span className="text-[10px] text-muted-foreground font-mono">top {shown.length}</span>
+        <span className="text-[10px] text-muted-foreground font-mono">{t("metrics.top")} {shown.length}</span>
       </div>
 
       {shown.length === 0 ? (
-        <div className="py-6 text-center text-[11px] text-muted-foreground">No data yet</div>
+        <div className="py-6 text-center text-[11px] text-muted-foreground">{t("metrics.noData")}</div>
       ) : (
         <div className="space-y-2">
           {shown.map((item, idx) => {
@@ -55,7 +58,7 @@ export function RankedTable({ title, subtitle, items, limit = 10 }: Props) {
                         width: `${(item.error / max) * 100}%`,
                         background: "#f8717180",
                       }}
-                      title={`${item.error} errors`}
+                      title={`${item.error} ${t("metrics.errors")}`}
                     />
                   )}
                 </div>

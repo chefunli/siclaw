@@ -1,11 +1,13 @@
 import { useState } from "react"
 import { Loader2, ExternalLink } from "lucide-react"
+import { useTranslation } from "react-i18next"
 import { useSystemConfig } from "../../hooks/useMetrics"
 import { useToast } from "../toast"
 
 const KEY = "system.grafanaUrl"
 
 export function GrafanaFrame() {
+  const { t } = useTranslation()
   const { config, loading, save } = useSystemConfig()
   const [editing, setEditing] = useState(false)
   const [input, setInput] = useState("")
@@ -24,21 +26,21 @@ export function GrafanaFrame() {
 
   const handleSave = async () => {
     const trimmed = input.trim()
-    if (!trimmed) { toast.error("URL cannot be empty"); return }
+    if (!trimmed) { toast.error(t("metrics.urlCannotBeEmpty")); return }
     try {
       const u = new URL(trimmed)
       if (u.protocol !== "http:" && u.protocol !== "https:") {
-        toast.error("URL must start with http:// or https://")
+        toast.error(t("metrics.urlMustStartWithHttp"))
         return
       }
     } catch {
-      toast.error("Invalid URL format")
+      toast.error(t("metrics.invalidUrlFormat"))
       return
     }
     setSaving(true)
     try {
       await save(KEY, trimmed)
-      toast.success("Grafana URL saved")
+      toast.success(t("metrics.grafanaUrlSaved"))
       setEditing(false)
     } catch (err: unknown) {
       toast.error((err as Error).message)
@@ -52,16 +54,15 @@ export function GrafanaFrame() {
     return (
       <section className="px-6 py-6">
         <div className="border border-border rounded-lg bg-card p-10 text-center">
-          <h3 className="text-[14px] font-semibold mb-2">Grafana dashboard not configured</h3>
+          <h3 className="text-[14px] font-semibold mb-2">{t("metrics.grafanaNotConfigured")}</h3>
           <p className="text-[12px] text-muted-foreground mb-5 max-w-md mx-auto">
-            Configure your remote Grafana dashboard URL to embed it here.
-            Long-term metrics trends live in Prometheus + Grafana; this tab provides one-click access.
+            {t("metrics.grafanaNotConfiguredDesc")}
           </p>
           <button
             onClick={() => { setInput(""); setEditing(true) }}
             className="px-4 py-1.5 text-[12px] rounded-md bg-blue-500 hover:bg-blue-600 text-white font-medium"
           >
-            Configure Grafana URL
+            {t("metrics.configureGrafanaUrl")}
           </button>
         </div>
       </section>
@@ -73,10 +74,9 @@ export function GrafanaFrame() {
     return (
       <section className="px-6 py-6">
         <div className="border border-border rounded-lg bg-card p-6 max-w-xl mx-auto">
-          <h3 className="text-[13px] font-semibold mb-1">Grafana Dashboard URL</h3>
+          <h3 className="text-[13px] font-semibold mb-1">{t("metrics.grafanaUrlLabel")}</h3>
           <p className="text-[11px] text-muted-foreground mb-4">
-            Paste a shareable Grafana dashboard URL (e.g. <span className="font-mono">https://grafana.internal/d/siclaw</span>).
-            Make sure the dashboard allows iframe embedding (<span className="font-mono">allow_embedding = true</span> in grafana.ini).
+            {t("metrics.grafanaUrlDesc")}
           </p>
           <input
             type="url"
@@ -91,7 +91,7 @@ export function GrafanaFrame() {
               disabled={saving}
               className="px-3 py-1.5 text-[12px] rounded-md border border-border hover:bg-secondary text-muted-foreground"
             >
-              Cancel
+              {t("metrics.cancel")}
             </button>
             <button
               onClick={handleSave}
@@ -99,7 +99,7 @@ export function GrafanaFrame() {
               className="px-4 py-1.5 text-[12px] rounded-md bg-blue-500 hover:bg-blue-600 text-white font-medium disabled:opacity-50 flex items-center gap-2"
             >
               {saving && <Loader2 className="w-3 h-3 animate-spin" />}
-              Save
+              {t("metrics.save")}
             </button>
           </div>
         </div>
@@ -113,7 +113,7 @@ export function GrafanaFrame() {
       <div className="border border-border rounded-lg bg-card overflow-hidden">
         <div className="flex items-center justify-between px-4 py-3 border-b border-border">
           <div>
-            <h3 className="text-[13px] font-semibold">Grafana Dashboard</h3>
+            <h3 className="text-[13px] font-semibold">{t("metrics.grafanaDashboard")}</h3>
             <p className="text-[11px] text-muted-foreground mt-0.5 font-mono truncate max-w-md">{grafanaUrl}</p>
           </div>
           <div className="flex items-center gap-2">
@@ -123,19 +123,19 @@ export function GrafanaFrame() {
               rel="noopener noreferrer"
               className="flex items-center gap-1 text-[11px] px-2 py-1 border border-border rounded hover:bg-secondary text-muted-foreground"
             >
-              <ExternalLink className="w-3 h-3" /> Open
+              <ExternalLink className="w-3 h-3" /> {t("metrics.open")}
             </a>
             <button
               onClick={() => { setInput(grafanaUrl); setEditing(true) }}
               className="text-[11px] px-2 py-1 border border-border rounded hover:bg-secondary text-muted-foreground"
             >
-              Edit URL
+              {t("metrics.editUrl")}
             </button>
           </div>
         </div>
         <iframe
           src={grafanaUrl}
-          title="Grafana Dashboard"
+          title={t("metrics.grafanaDashboard")}
           className="w-full h-[800px] border-0 bg-black"
           // NOTE: omitting allow-same-origin makes iframe XSS-safe even if URL is
           // javascript: or attacker-controlled. Grafana public share URLs work with just allow-scripts.

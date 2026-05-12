@@ -1,6 +1,7 @@
 import { useEffect, useRef, useState } from "react"
 import { Bell, CheckCircle2, AlertTriangle, Loader2 } from "lucide-react"
 import { useNavigate } from "react-router-dom"
+import { useTranslation } from "react-i18next"
 import { api } from "../api"
 
 interface Notification {
@@ -16,21 +17,23 @@ interface Notification {
   createdAt: string
 }
 
-function formatRelative(iso: string): string {
-  const now = Date.now()
-  const t = new Date(iso).getTime()
-  const diff = now - t
-  if (diff < 60_000) return "just now"
-  if (diff < 3_600_000) return `${Math.floor(diff / 60_000)}m ago`
-  if (diff < 86_400_000) return `${Math.floor(diff / 3_600_000)}h ago`
-  return new Date(iso).toLocaleString()
-}
-
 /**
  * Bell + dropdown. WS subscription to /ws/notifications for live push,
  * REST bootstrap on mount, persistent across reconnects.
  */
 export function NotificationBell({ collapsed = false }: { collapsed?: boolean } = {}) {
+  const { t } = useTranslation()
+
+  function formatRelative(iso: string): string {
+    const now = Date.now()
+    const time = new Date(iso).getTime()
+    const diff = now - time
+    if (diff < 60_000) return t("notifications.justNow")
+    if (diff < 3_600_000) return t("notifications.minutesAgo", { count: Math.floor(diff / 60_000) })
+    if (diff < 86_400_000) return t("notifications.hoursAgo", { count: Math.floor(diff / 3_600_000) })
+    return new Date(iso).toLocaleString()
+  }
+
   const [open, setOpen] = useState(false)
   const [items, setItems] = useState<Notification[]>([])
   const [unread, setUnread] = useState(0)
@@ -149,31 +152,31 @@ export function NotificationBell({ collapsed = false }: { collapsed?: boolean } 
     <div ref={anchorRef} className="relative">
       <button
         onClick={() => setOpen(!open)}
-        title={collapsed ? "Notifications" : undefined}
-        aria-label="Notifications"
+        title={collapsed ? t("notifications.title") : undefined}
+        aria-label={t("notifications.title")}
         className={`flex items-center ${collapsed ? "justify-center px-0" : "gap-2.5 px-4"} py-3 text-[13px] text-muted-foreground hover:text-foreground border-t border-border w-full`}
       >
         <div className="relative shrink-0">
           <Bell className="h-4 w-4" />
           {unread > 0 && (
             <span className="absolute -top-1 -right-1 min-w-[14px] h-[14px] px-1 rounded-full bg-red-500 text-[9px] font-medium text-white flex items-center justify-center leading-none">
-              {unread > 99 ? "99+" : unread}
+              {unread > 99 ? t("notifications.unreadMax") : unread}
             </span>
           )}
         </div>
-        {!collapsed && "Notifications"}
+        {!collapsed && t("notifications.title")}
       </button>
 
       {open && (
         <div className="absolute bottom-full left-0 mb-1 w-[360px] max-h-[480px] bg-card border border-border rounded-lg shadow-2xl overflow-hidden flex flex-col z-50">
           <div className="flex items-center justify-between px-4 py-2.5 border-b border-border">
-            <span className="text-[12px] font-semibold">Notifications</span>
+            <span className="text-[12px] font-semibold">{t("notifications.title")}</span>
             {unread > 0 && (
               <button
                 onClick={handleReadAll}
                 className="text-[11px] text-muted-foreground hover:text-foreground"
               >
-                Mark all read
+                {t("notifications.markAllRead")}
               </button>
             )}
           </div>
@@ -181,11 +184,11 @@ export function NotificationBell({ collapsed = false }: { collapsed?: boolean } 
             {loading ? (
               <div className="flex items-center justify-center py-10 text-muted-foreground text-[12px] gap-2">
                 <Loader2 className="h-3.5 w-3.5 animate-spin" />
-                Loading...
+                {t("notifications.loading")}
               </div>
             ) : items.length === 0 ? (
               <div className="py-10 text-center text-[12px] text-muted-foreground">
-                No notifications
+                {t("notifications.noNotifications")}
               </div>
             ) : (
               <div className="divide-y divide-border/30">

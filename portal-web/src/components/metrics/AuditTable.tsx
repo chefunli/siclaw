@@ -1,17 +1,11 @@
 import { useMemo, useState } from "react"
 import { ChevronDown, ChevronRight, CheckCircle, XCircle, Ban, Loader2 } from "lucide-react"
+import { useTranslation } from "react-i18next"
 import { useAudit, useUsers, type AuditLog } from "../../hooks/useMetrics"
 import { AuditDetailPanel } from "./AuditDetailPanel"
 
 const TOOL_OPTIONS = ["All", "restricted_bash", "local_script", "pod_exec", "kubectl", "cluster_probe", "cluster_list"]
 const STATUS_OPTIONS = ["All", "success", "error", "blocked"]
-const RANGE_OPTIONS = [
-  { label: "Last 1h", value: 3_600_000 },
-  { label: "Last 6h", value: 21_600_000 },
-  { label: "Last 24h", value: 86_400_000 },
-  { label: "Last 7d", value: 7 * 86_400_000 },
-  { label: "Last 30d", value: 30 * 86_400_000 },
-]
 
 function formatDuration(ms: number | null): string {
   if (ms == null) return "—"
@@ -55,11 +49,21 @@ function OutcomeIcon({ outcome }: { outcome: string | null }) {
 }
 
 export function AuditTable({ userFilterId, usernameHint }: { userFilterId: string | null; usernameHint: string | null }) {
+  const { t } = useTranslation()
   const [tool, setTool] = useState("All")
   const [status, setStatus] = useState("All")
   const [rangeMs, setRangeMs] = useState(86_400_000)
   const [expandedId, setExpandedId] = useState<string | null>(null)
   const { users } = useUsers()
+  
+  const RANGE_OPTIONS = [
+    { label: t("metrics.last1h"), value: 3_600_000 },
+    { label: t("metrics.last6h"), value: 21_600_000 },
+    { label: t("metrics.last24h"), value: 86_400_000 },
+    { label: t("metrics.last7dLabel"), value: 7 * 86_400_000 },
+    { label: t("metrics.last30dLabel"), value: 30 * 86_400_000 },
+  ]
+  
   const userMap = useMemo(() => {
     const m = new Map<string, string>()
     users.forEach((u) => m.set(u.id, u.username))
@@ -86,7 +90,7 @@ export function AuditTable({ userFilterId, usernameHint }: { userFilterId: strin
       <div className="flex items-center gap-2 flex-wrap">
         {usernameHint && (
           <span className="text-[11px] px-2 py-1 rounded bg-secondary border border-border text-muted-foreground">
-            user: <span className="text-foreground font-mono">{usernameHint}</span>
+            {t("metrics.user")}: <span className="text-foreground font-mono">{usernameHint}</span>
           </span>
         )}
         <select
@@ -94,14 +98,14 @@ export function AuditTable({ userFilterId, usernameHint }: { userFilterId: strin
           onChange={(e) => setTool(e.target.value)}
           className="h-8 px-2 pr-6 text-[12px] rounded-md bg-secondary border border-border text-foreground focus:outline-none focus:border-blue-500"
         >
-          {TOOL_OPTIONS.map((t) => <option key={t} value={t}>{t === "All" ? "All Tools" : t}</option>)}
+          {TOOL_OPTIONS.map((toolOpt) => <option key={toolOpt} value={toolOpt}>{toolOpt === "All" ? t("metrics.allTools") : toolOpt}</option>)}
         </select>
         <select
           value={status}
           onChange={(e) => setStatus(e.target.value)}
           className="h-8 px-2 pr-6 text-[12px] rounded-md bg-secondary border border-border text-foreground focus:outline-none focus:border-blue-500"
         >
-          {STATUS_OPTIONS.map((s) => <option key={s} value={s}>{s === "All" ? "All Status" : s}</option>)}
+          {STATUS_OPTIONS.map((s) => <option key={s} value={s}>{s === "All" ? t("metrics.allStatus") : s}</option>)}
         </select>
         <select
           value={rangeMs}
@@ -111,7 +115,9 @@ export function AuditTable({ userFilterId, usernameHint }: { userFilterId: strin
           {RANGE_OPTIONS.map((r) => <option key={r.value} value={r.value}>{r.label}</option>)}
         </select>
         <div className="flex-1"></div>
-        <div className="text-[11px] text-muted-foreground font-mono">{logs.length} entries{hasMore ? "+" : ""}</div>
+        <div className="text-[11px] text-muted-foreground font-mono">
+          {hasMore ? t("metrics.entriesWithMore", { count: logs.length }) : t("metrics.entriesWithoutMore", { count: logs.length })}
+        </div>
       </div>
 
       <div className="border border-border rounded-lg bg-card overflow-hidden">
@@ -119,18 +125,18 @@ export function AuditTable({ userFilterId, usernameHint }: { userFilterId: strin
           <thead className="bg-secondary/40">
             <tr className="text-[10px] uppercase tracking-wider text-muted-foreground">
               <th className="w-8"></th>
-              <th className="text-left px-3 py-2.5 font-medium">Time</th>
-              <th className="text-left px-3 py-2.5 font-medium">User</th>
-              <th className="text-left px-3 py-2.5 font-medium">Agent</th>
-              <th className="text-left px-3 py-2.5 font-medium">Tool</th>
-              <th className="text-left px-3 py-2.5 font-medium">Command</th>
-              <th className="text-center px-3 py-2.5 font-medium w-16">Status</th>
-              <th className="text-right px-4 py-2.5 font-medium w-20">Duration</th>
+              <th className="text-left px-3 py-2.5 font-medium">{t("metrics.time")}</th>
+              <th className="text-left px-3 py-2.5 font-medium">{t("metrics.user")}</th>
+              <th className="text-left px-3 py-2.5 font-medium">{t("metrics.agent")}</th>
+              <th className="text-left px-3 py-2.5 font-medium">{t("metrics.tool")}</th>
+              <th className="text-left px-3 py-2.5 font-medium">{t("metrics.command")}</th>
+              <th className="text-center px-3 py-2.5 font-medium w-16">{t("metrics.status")}</th>
+              <th className="text-right px-4 py-2.5 font-medium w-20">{t("metrics.duration")}</th>
             </tr>
           </thead>
           <tbody className="divide-y divide-border/60">
             {logs.length === 0 && !loading ? (
-              <tr><td colSpan={8} className="text-center py-12 text-muted-foreground text-[12px]">No entries found</td></tr>
+              <tr><td colSpan={8} className="text-center py-12 text-muted-foreground text-[12px]">{t("metrics.noEntriesFound")}</td></tr>
             ) : logs.map((log: AuditLog) => (
               <AuditRow
                 key={log.id}
@@ -143,14 +149,14 @@ export function AuditTable({ userFilterId, usernameHint }: { userFilterId: strin
           </tbody>
         </table>
         <div className="flex items-center justify-between px-4 py-3 border-t border-border text-[11px] text-muted-foreground">
-          <span>{loading ? "Loading…" : `Showing ${logs.length}`}</span>
+          <span>{loading ? t("metrics.loading") : t("metrics.showing", { count: logs.length })}</span>
           {hasMore && (
             <button
               onClick={loadMore}
               disabled={loading}
               className="px-3 py-1 rounded border border-border hover:bg-secondary text-foreground disabled:opacity-50"
             >
-              {loading ? <Loader2 className="w-3 h-3 animate-spin" /> : "Load More ↓"}
+              {loading ? <Loader2 className="w-3 h-3 animate-spin" /> : t("metrics.loadMore")}
             </button>
           )}
         </div>

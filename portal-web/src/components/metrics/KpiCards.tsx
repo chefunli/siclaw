@@ -1,4 +1,5 @@
 import { MessageSquare, Bot, Activity, Wrench } from "lucide-react"
+import { useTranslation } from "react-i18next"
 
 interface Props {
   totalSessions: number
@@ -15,41 +16,42 @@ function fmt(n: number): string {
   return String(n)
 }
 
-const periodLabel: Record<Props["period"], string> = {
-  today: "today",
-  "7d": "7d",
-  "30d": "30d",
-}
-
 export function KpiCards(p: Props) {
-  const plabel = periodLabel[p.period]
+  const { t } = useTranslation()
+  const periodLabels = {
+    today: t("metrics.todayLabel"),
+    "7d": t("metrics.last7daysLabel"),
+    "30d": t("metrics.last30daysLabel"),
+  }
+  const plabel = periodLabels[p.period]
+  
   return (
     <div className="grid grid-cols-4 gap-4">
       <KpiCard
-        label={`Sessions · ${plabel}`}
+        label={`${t("metrics.sessions")} · ${plabel}`}
         value={fmt(p.totalSessions)}
-        hint={`active now · ${p.activeSessions}`}
+        hint={`${t("metrics.activeNow")} · ${p.activeSessions}`}
         icon={<Activity className="h-3.5 w-3.5" style={{ color: "#fbbf24" }} />}
         accent="#fbbf24"
       />
       <KpiCard
-        label={`Prompts · ${plabel}`}
+        label={`${t("metrics.prompts")} · ${plabel}`}
         value={fmt(p.totalPrompts)}
-        hint="user messages"
+        hint={t("metrics.userMessages")}
         icon={<MessageSquare className="h-3.5 w-3.5" style={{ color: "#34d399" }} />}
         accent="#34d399"
       />
       <KpiCard
-        label="Tool Calls · live"
+        label={`${t("metrics.toolCalls")} · ${t("metrics.live")}`}
         value={fmt(p.toolCallsTotal)}
-        hint="top-N total"
+        hint={t("metrics.topNTotal")}
         icon={<Wrench className="h-3.5 w-3.5" style={{ color: "#a78bfa" }} />}
         accent="#a78bfa"
       />
       <KpiCard
-        label="WS Connections · live"
+        label={`${t("metrics.wsConnections")} · ${t("metrics.live")}`}
         value={String(p.wsConnections)}
-        hint="connected clients"
+        hint={t("metrics.connectedClients")}
         icon={<Bot className="h-3.5 w-3.5" style={{ color: "#60a5fa" }} />}
         accent="#60a5fa"
       />

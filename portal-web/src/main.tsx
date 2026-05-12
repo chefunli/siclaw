@@ -2,6 +2,7 @@ import React from "react"
 import ReactDOM from "react-dom/client"
 import { BrowserRouter, Routes, Route, Navigate } from "react-router-dom"
 import "./index.css"
+import "./i18n" // Initialize i18n before any component renders
 import { ToastProvider } from "./components/toast"
 import { ConfirmProvider } from "./components/confirm-dialog"
 import { Login } from "./pages/Login"
